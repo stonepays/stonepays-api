@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CloudinaryModule } from './utils/cloudinary/cloudinary.module';
+import { ProductModule } from './product/product.module';
+import { ProductCategoryModule } from './product-category/product-category.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { CloudinaryModule } from './utils/cloudinary/cloudinary.module';
     AuthModule,
     UsersModule,
     CloudinaryModule,
+    ProductModule,
+    ProductCategoryModule,
   ],
   controllers: [],
   providers: [],
