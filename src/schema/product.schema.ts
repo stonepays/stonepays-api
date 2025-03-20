@@ -10,13 +10,6 @@ export class Product {
 
     @Prop({
         required: true,
-        type: Types.ObjectId,
-        ref: 'User'
-    })
-    user_id: Types.ObjectId;
-
-    @Prop({
-        required: true,
         unique: true,
     })
     product_name: string;

@@ -15,10 +15,6 @@ class ProductCategoryDto {
 }
 
 export class ProductDto {
-    @ApiProperty({ example: "64f5c8b7a3e7a8d7b6f5e4c3" })
-    @IsNotEmpty()
-    @IsMongoId()
-    user_id: string;
 
     @ApiProperty({ example: "iTunes" })
     @IsNotEmpty()

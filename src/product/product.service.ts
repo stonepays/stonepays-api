@@ -38,7 +38,6 @@ export class ProductService {
         try {
             const product = new this.product_model({
                 ...dto,
-                user_id: new Types.ObjectId(dto.user_id),
                 product_img: image_url,
             });
 
