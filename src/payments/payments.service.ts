@@ -21,7 +21,7 @@ export class PaymentsService {
         if (!order) throw new BadRequestException("Order not found");
         if (order.status === "Paid") throw new BadRequestException("Order has already been paid");
 
-        const user = await this.user_model.findById(order.user_id);
+        const user = await this.user_model.findById(order.user_details.user_id);
         if (!user) throw new BadRequestException("User not found");
 
         try {

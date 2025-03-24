@@ -1,19 +1,24 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from './user.schema';
+import { Product } from './product.schema';
 
 export type OrderDocument = Order & Document;
 
 @Schema({ timestamps: true })
 export class Order {
-    // ✅ User ID (Optional for guest orders)
+    // ✅ User Details (Includes user_id and other details)
     @Prop({
-        type: Types.ObjectId, 
-        ref: "User",
-        required: false,  
+        type: Object,
+        required: false,
         default: null
     })
-    user_id: Types.ObjectId | null;
+    user_details: {
+        user_id: Types.ObjectId | null;
+        first_name: string;
+        last_name: string;
+        email: string;
+        user_img: string;
+    } | null;
 
     // ✅ Temp Order ID (For guests)
     @Prop({
@@ -23,27 +28,33 @@ export class Order {
         index: true    
     })
     temp_order_id: Types.ObjectId | null;
-    
+
     // ✅ Products Ordered
-    @Prop([
-        {
-            product_id: {
-                type: Types.ObjectId,
-                ref: "Product",
-                required: true
-            },
-            quantity: {
-                type: Number,
-                required: true,
-            },
-            price: {
-                type: Number,
-                required: true
-            },
+    @Prop([{
+        product_id: {
+            type: Types.ObjectId,
+            ref: "Product",
+            required: true
         },
-    ])
+        product_details: {
+            product_name: { type: String },
+            product_category: { type: [String] }
+        },
+        quantity: {
+            type: Number,
+            required: true,
+        },
+        price: {
+            type: Number,
+            required: true
+        },
+    }])
     products: {
         product_id: Types.ObjectId;
+        product_details: {
+            product_name: string;
+            product_category: string[];
+        };
         quantity: number;
         price: number;
     }[];
@@ -97,7 +108,7 @@ export class Order {
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
 
-// ✅ Ensure null values are omitted when saving documents
+// ✅ Pre-save middleware to omit null values
 OrderSchema.pre('save', function (next) {
     if (!this.payment_reference) {
         this.payment_reference = undefined; // Prevents MongoDB from storing `null`

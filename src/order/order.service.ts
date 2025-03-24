@@ -5,6 +5,7 @@ import { Order, OrderDocument } from 'src/schema/order.schema';
 import { OrderDto } from 'src/dto/order.dto';
 import { ConfigService } from '@nestjs/config';
 import { User, UserDocument } from 'src/schema/user.schema';
+import { Product, ProductDocument } from 'src/schema/product.schema';
 
 @Injectable()
 export class OrderService {
@@ -13,42 +14,80 @@ export class OrderService {
     constructor(
         @InjectModel(Order.name) private order_model: Model<OrderDocument>,
         @InjectModel(User.name) private user_model: Model<UserDocument>,
+        @InjectModel(Product.name) private product_model: Model<ProductDocument>,
         private config_service: ConfigService
     ) {}
 
-    // ✅ Create Order (Unauthenticated users allowed)
     async create_order(dto: OrderDto): Promise<any> {
         try {
-            const tempOrderId = !dto.user_id 
-                ? dto.temp_order_id && Types.ObjectId.isValid(dto.temp_order_id) 
-                    ? new Types.ObjectId(dto.temp_order_id) 
+            const tempOrderId = !dto.user_id
+                ? dto.temp_order_id && Types.ObjectId.isValid(dto.temp_order_id)
+                    ? new Types.ObjectId(dto.temp_order_id)
                     : new Types.ObjectId()
-                : undefined; // ✅ Use undefined instead of null
-    
-            const order = new this.order_model({
-                user_id: dto.user_id ? new Types.ObjectId(dto.user_id) : null,
-                temp_order_id: tempOrderId, // ✅ Prevents duplicate null values
-                products: dto.products.map(product => ({
-                    product_id: new Types.ObjectId(product.product_id),
+                : undefined;
+
+            // Fetch user details if user_id exists
+            let userDetails = null;
+            if (dto.user_id) {
+                const user = await this.user_model.findById(dto.user_id).exec();
+                if (!user) throw new NotFoundException('User not found');
+                userDetails = {
+                    user_id: user._id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    user_img: user.user_img,
+                };
+            }
+
+            // Fetch product details and check inventory
+            const products = [];
+            for (const product of dto.products) {
+                const productData = await this.product_model.findById(product.product_id).exec();
+                if (!productData) throw new NotFoundException(`Product not found: ${product.product_id}`);
+                if (productData.product_qty < product.quantity) {
+                    throw new BadRequestException(
+                        `Insufficient stock for product: ${productData.product_name}`
+                    );
+                }
+
+                // Reduce product quantity
+                productData.product_qty -= product.quantity;
+                await productData.save();
+
+                products.push({
+                    product_id: productData._id,
+                    product_details: {
+                        product_name: productData.product_name,
+                        product_category: productData.product_category.map((c) => c.category),
+                    },
                     quantity: product.quantity,
-                    price: product.price
-                })),
+                    price: product.price,
+                });
+            }
+
+            // Create and save the order
+            const order = new this.order_model({
+                user_details: userDetails,
+                temp_order_id: tempOrderId,
+                products,
                 total_price: dto.total_price,
-                status: "Pending"
+                status: 'Pending',
             });
-    
+
             const saved_order = await order.save();
-    
+
             return {
                 success: true,
-                message: "Order created successfully",
-                data: saved_order
+                message: 'Order created successfully',
+                data: saved_order,
             };
         } catch (error) {
-            this.logger.error("Error creating order:", error);
-            throw new BadRequestException("Error creating order: " + error.message);
+            this.logger.error('Error creating order:', error);
+            throw new BadRequestException('Error creating order: ' + error.message);
         }
     }
+
     
     
     
@@ -133,7 +172,7 @@ export class OrderService {
                 return { success: false, message: "No pending orders found" };
             }
 
-            order.user_id = new Types.ObjectId(user_id);
+            order.user_details.user_id = new Types.ObjectId(user_id);
             order.temp_order_id = null;
             await order.save();
 
