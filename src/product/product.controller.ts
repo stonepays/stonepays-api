@@ -85,20 +85,15 @@ export class ProductController {
         }
     }
 
-    @Get('get_products/:category_id')
+    @Get('get_products')
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'Get products by category ID',
     })
-    @ApiParam({
-        name: 'category_id',
-        required: true,
-        example: '64f5c8b7a3e7a8d7b6f5e4c3',
-        description: 'The ID of the product category'
-    })
-    async getProductsByCategory(@Param('category_id') category_id: string) {
+
+    async getProductsByCategory() {
         try {
-            return await this.product.get_product_by_category(category_id);
+            return await this.product.get_product_by_category();
         } catch (error) {
             throw new BadRequestException(`Error retrieving products: ${error.message}`);
         }

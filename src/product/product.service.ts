@@ -159,15 +159,9 @@ export class ProductService {
 
 
     // get products by category id
-    async get_product_by_category(category_id: string): Promise<any> {
+    async get_product_by_category() {
         try {
-            const products = await this.product_model.find({
-                "product_category.id": category_id, // Querying by category ID
-            }).exec();
-    
-            if (!products || products.length === 0) {
-                throw new BadRequestException('No products found for this category');
-            }
+            const products = await this.product_model.find().exec();
     
             return {
                 success: true,
