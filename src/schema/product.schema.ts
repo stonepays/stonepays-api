@@ -14,15 +14,12 @@ export class Product {
     })
     product_name: string;
 
+
     @Prop({
         required: true,
-        type: [{
-            category: { type: String, required: true },
-            id: { type: Types.ObjectId, required: true, ref: 'ProductCategory' }
-        }],
-        _id: false // ✅ Prevent MongoDB from adding an _id to each product_category entry
+        unique: true,
     })
-    product_category: { category: string; id: Types.ObjectId }[];
+    product_category: string; 
 
     @Prop({
         required: true

@@ -59,7 +59,7 @@ export class OrderService {
                     product_id: productData._id,
                     product_details: {
                         product_name: productData.product_name,
-                        product_category: productData.product_category.map((c) => c.category),
+                        product_category: productData.product_category,
                     },
                     quantity: product.quantity,
                     price: product.price,

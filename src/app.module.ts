@@ -5,7 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CloudinaryModule } from './utils/cloudinary/cloudinary.module';
 import { ProductModule } from './product/product.module';
-import { ProductCategoryModule } from './product-category/product-category.module';
 import { OrderModule } from './order/order.module';
 import { PaymentsModule } from './payments/payments.module';
 
@@ -24,7 +23,6 @@ import { PaymentsModule } from './payments/payments.module';
     UsersModule,
     CloudinaryModule,
     ProductModule,
-    ProductCategoryModule,
     OrderModule,
     PaymentsModule,
   ],

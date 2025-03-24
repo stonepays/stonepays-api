@@ -36,10 +36,12 @@ export class Order {
             ref: "Product",
             required: true
         },
-        product_details: {
-            product_name: { type: String },
-            product_category: { type: [String] }
+        product_category: {
+            type: Types.ObjectId,
+            ref: "Product",
+            required: true
         },
+
         quantity: {
             type: Number,
             required: true,
@@ -51,10 +53,7 @@ export class Order {
     }])
     products: {
         product_id: Types.ObjectId;
-        product_details: {
-            product_name: string;
-            product_category: string[];
-        };
+        product_category: Types.ObjectId;
         quantity: number;
         price: number;
     }[];
