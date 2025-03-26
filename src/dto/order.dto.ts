@@ -5,7 +5,8 @@ import {
     IsNotEmpty,
     IsArray,
     ValidateNested,
-    IsNumber
+    IsNumber,
+    IsString
 } from 'class-validator';
 import { Type } from "class-transformer";
 
@@ -21,6 +22,12 @@ class ProductItemDto {
     })
     @IsNumber()
     quantity: number;
+
+    @ApiProperty({
+        example: "digital product"
+    })
+    @IsString()
+    product_category: string;
 
     @ApiProperty({
         example: 50

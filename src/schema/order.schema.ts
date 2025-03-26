@@ -37,7 +37,7 @@ export class Order {
             required: true
         },
         product_category: {
-            type: Types.ObjectId,
+            type: String,
             ref: "Product",
             required: true
         },
@@ -75,10 +75,11 @@ export class Order {
     @Prop({
         type: String,
         unique: true,
-        sparse: true,
-        default: null
+        sparse: true, // Allows multiple null or undefined values
+        default: null,
     })
-    transaction_reference?: string; 
+    transaction_reference?: string;
+    
 
     // ✅ Payment Method
     @Prop({
@@ -109,8 +110,12 @@ export const OrderSchema = SchemaFactory.createForClass(Order);
 
 // ✅ Pre-save middleware to omit null values
 OrderSchema.pre('save', function (next) {
+    if (!this.transaction_reference) {
+        this.transaction_reference = undefined; // Prevent storing `null`
+    }
     if (!this.payment_reference) {
-        this.payment_reference = undefined; // Prevents MongoDB from storing `null`
+        this.payment_reference = undefined; // Prevent storing `null`
     }
     next();
 });
+

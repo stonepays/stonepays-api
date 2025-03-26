@@ -7,6 +7,7 @@ import { CloudinaryModule } from './utils/cloudinary/cloudinary.module';
 import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PalmpayModule } from './palmpay/palmpay.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PaymentsModule } from './payments/payments.module';
     ProductModule,
     OrderModule,
     PaymentsModule,
+    PalmpayModule,
   ],
   controllers: [],
   providers: [],
