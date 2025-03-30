@@ -28,13 +28,6 @@ export class SignUpDto {
     email: string;
 
 
-    @ApiProperty({
-        example: 'user'
-    })
-    @IsString()
-    @IsNotEmpty()
-    role: string;
-
     
     @ApiProperty({
         example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA... (truncated)',
