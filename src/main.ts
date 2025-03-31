@@ -9,8 +9,8 @@ async function bootstrap() {
   // Ensure CORS matches frontend
   app.enableCors({
     origin: [
-      'http://localhost:3001', // Dev environment
-      'https://stonepays-app.vercel.app/' , // Production frontend
+      'http://localhost:3000', // Dev environment
+      'https://stonepays-app.netlify.app' , // Production frontend
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
