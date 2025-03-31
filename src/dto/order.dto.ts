@@ -42,7 +42,7 @@ export class OrderDto {
         description: "User ID (Required for authenticated users, optional for guests)",
     })
     @IsMongoId()
-    @IsOptional() // ✅ User ID is optional for guests
+    @IsNotEmpty() // ✅ User ID is optional for guests
     user_id?: string;
 
     @ApiProperty({
@@ -58,6 +58,7 @@ export class OrderDto {
         description: "List of products in the order",
     })
     @IsArray()
+    @IsNotEmpty()
     @ValidateNested({ each: true })
     @Type(() => ProductItemDto)
     products: ProductItemDto[];
@@ -66,5 +67,6 @@ export class OrderDto {
         example: 100
     })
     @IsNumber()
+    @IsNotEmpty()
     total_price: number;
 }
