@@ -7,15 +7,24 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Ensure CORS matches frontend
+  // app.enableCors({
+  //   origin: [
+  //     'http://localhost:3000', // Dev environment
+  //     'https://stonepays-app.netlify.app' , // Production frontend
+  //   ],
+  //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  //   allowedHeaders: ['Content-Type', 'Authorization'],
+  //   credentials: true, // Allow cookies and authentication headers
+  // });
+
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000', // Dev environment
-      'https://stonepays-app.netlify.app' , // Production frontend
-    ],
+    origin: true, // Allows all origins
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // Allow cookies and authentication headers
   });
+  
 
   // Swagger Documentation
   const config = new DocumentBuilder()
