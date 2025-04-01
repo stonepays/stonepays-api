@@ -6,6 +6,7 @@ import { OrderDto } from 'src/dto/order.dto';
 import { ConfigService } from '@nestjs/config';
 import { User, UserDocument } from 'src/schema/user.schema';
 import { Product, ProductDocument } from 'src/schema/product.schema';
+import * as moment from 'moment';
 
 @Injectable()
 export class OrderService {
@@ -203,5 +204,81 @@ export class OrderService {
     }
 
 
+    async get_orders_by_period(period: 'weekly' | 'monthly' | 'yearly'): Promise<any> {
+        try {
+            let startDate: Date;
     
+            switch (period) {
+                case 'weekly':
+                    startDate = moment().startOf('isoWeek').toDate();
+                    break;
+                case 'monthly':
+                    startDate = moment().startOf('month').toDate();
+                    break;
+                case 'yearly':
+                    startDate = moment().startOf('year').toDate();
+                    break;
+                default:
+                    throw new BadRequestException("Invalid period. Use 'weekly', 'monthly', or 'yearly'.");
+            }
+    
+            // Fetch only total_price and createdAt fields
+            const orders = await this.order_model
+                .find({ createdAt: { $gte: startDate } })
+                .select('total_price createdAt')
+                .exec();
+    
+            return {
+                success: true,
+                message: `Orders retrieved for ${period}`,
+                data: orders
+            };
+        } catch (error) {
+            this.logger.error(`Error retrieving ${period} orders:`, error);
+            throw new BadRequestException(`Error retrieving ${period} orders: ${error.message}`);
+        }
+    }
+    
+    
+     // Get the top 10 sold products with total amount
+     async get_top_sold_products(): Promise<any> {
+        try {
+            // Aggregate order data to get the count of each product sold and the total revenue
+            const result = await this.order_model.aggregate([
+                { $unwind: '$products' }, // Flatten the products array in each order
+                {
+                    $group: {
+                        _id: '$products.product_id', // Group by product_id
+                        total_sold: { $sum: '$products.quantity' }, // Sum the quantity sold for each product
+                        total_revenue: { $sum: { $multiply: ['$products.quantity', '$products.price'] } }, // Calculate total revenue
+                    },
+                },
+                { $sort: { total_sold: -1 } }, // Sort by total_sold in descending order
+                { $limit: 10 }, // Limit the results to top 10
+            ]);
+
+            // Map the result to include product details
+            const topProducts = await Promise.all(
+                result.map(async (item) => {
+                    const product = await this.product_model.findById(item._id).exec();
+                    return {
+                        product_id: product._id,
+                        product_name: product.product_name,
+                        total_sold: item.total_sold,
+                        total_revenue: item.total_revenue.toFixed(2), // Formatting the total revenue to two decimal places
+                        product_img: product.product_img,
+                    };
+                }),
+            );
+
+            return {
+                success: true,
+                message: 'Top 10 sold products retrieved successfully',
+                data: topProducts,
+            };
+        } catch (error) {
+            this.logger.error('Error retrieving top sold products:', error);
+            throw new BadRequestException('Error retrieving top sold products: ' + error.message);
+        }
+    }
 }

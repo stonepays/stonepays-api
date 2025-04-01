@@ -7,7 +7,8 @@ import {
     Param, 
     Post, 
     Put, 
-    UseGuards 
+    UseGuards,
+    Query 
 } from '@nestjs/common';
 import { AuthGuard } from 'src/guards/auth.guard';
 import { RoleGuard } from 'src/guards/roles.guard';
@@ -138,6 +139,32 @@ export class OrderController {
             return this.order_service.get_total_order_count();
         } catch (error) {
             throw new BadRequestException(`Error attaching order: ${error.message}`);
+        }
+    }
+
+
+    @Get('/by_period')
+    @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets a chart of order by period',
+    })
+    async getOrdersChart(@Query('period') period: 'weekly' | 'monthly' | 'yearly') {
+        try {
+            return this.order_service.get_orders_by_period(period);
+        } catch (error) {
+            throw new BadRequestException(`Error retrieving order chat: ${error.message}`);
+        }
+    }
+
+
+     // Endpoint to get the top 10 sold products
+     @Get('top_sold')
+     async getTopSoldProducts() {
+        try {
+            const result = await this.order_service.get_top_sold_products();
+            return result;
+        } catch (error) {
+            throw new BadRequestException(`Error retrieving top 10 order: ${error.message}`);
         }
     }
 }
