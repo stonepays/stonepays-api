@@ -121,4 +121,21 @@ export class UsersService {
         }
     }
 
+
+    // ✅ Get Total User Count
+    async get_total_user_count(): Promise<any> {
+        try {
+            const total_count = await this.user_model.countDocuments();
+            return {
+                success: true,
+                message: "Total users count retrieved successfully",
+                data: total_count
+            };
+        } catch (error) {
+            this.logger.error("Error retrieving total users count:", error);
+            throw new BadRequestException("Error retrieving total users count: " + error.message);
+        }
+    }
+
+
 }

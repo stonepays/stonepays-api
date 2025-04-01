@@ -113,6 +113,7 @@ export class OrderController {
 
     // ✅ Attach Order to User After Sign-up
     @Post('attach_order_to_user')
+    @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'Attach a guest order to an authenticated user after sign-up',
     })
@@ -127,43 +128,16 @@ export class OrderController {
         }
     }
 
-    // @Post("checkout_order/:order_id")
-    // @Roles(Role.USER)
-    // @ApiOperation({
-    //     summary: "Proceed to checkout with PalmPay payment",
-    // })
-    // @ApiParam({
-    //     name: "order_id",
-    //     required: true,
-    //     example: "64f5c8b7a3e7a8d7b6f5e4c3",
-    //     description: "The ID of the order to be checked out",
-    // })
-    // async checkout_order(
-    //     @Param("order_id") order_id: string,
-    //     @Body() checkoutDto: CheckoutOrderDto
-    // ) {
-    //     try {
-    //         return await this.order_service.check_out_order(order_id, checkoutDto);
-    //     } catch (error) {
-    //         throw new BadRequestException(`Error checking out order: ${error.message}`);
-    //     }
-    // }
-
-
-    // // ✅ Verify PalmPay Payment
-    // @Post('verify_payment')
-    // @Roles(Role.ADMIN, Role.USER)
-    // @ApiOperation({
-    //     summary: 'Verify payment after PalmPay transaction callback',
-    // })
-    // async verify_payment(
-    //     @Body('order_id') order_id: string,
-    //     @Body('transaction_id') transaction_id: string
-    // ) {
-    //     try {
-    //         return this.order_service.verify_payment(order_id, transaction_id);
-    //     } catch (error) {
-    //         throw new BadRequestException(`Error verifying payment: ${error.message}`);
-    //     }
-    // }
+    @Get('total_count')
+    @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets the total order count for dashboard',
+    })
+    async getTotalOrderCount() {
+        try {      
+            return this.order_service.get_total_order_count();
+        } catch (error) {
+            throw new BadRequestException(`Error attaching order: ${error.message}`);
+        }
+    }
 }

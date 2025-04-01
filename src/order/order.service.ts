@@ -186,5 +186,22 @@ export class OrderService {
         }
     }
 
+
+    // ✅ Get Total Order Count
+    async get_total_order_count(): Promise<any> {
+        try {
+            const total_count = await this.order_model.countDocuments();
+            return {
+                success: true,
+                message: "Total order count retrieved successfully",
+                data: total_count
+            };
+        } catch (error) {
+            this.logger.error("Error retrieving total order count:", error);
+            throw new BadRequestException("Error retrieving total order count: " + error.message);
+        }
+    }
+
+
     
 }

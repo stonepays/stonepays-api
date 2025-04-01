@@ -173,6 +173,22 @@ export class ProductService {
             throw new BadRequestException('An error occurred while retrieving products');
         }
     }
-    
+
+
+    // ✅ Get Total Product Count
+    async get_total_product_count(): Promise<any> {
+        try {
+            const total_count = await this.product_model.countDocuments();
+            return {
+                success: true,
+                message: "Total product count retrieved successfully",
+                data: total_count
+            };
+        } catch (error) {
+            this.logger.error("Error retrieving total product count:", error);
+            throw new BadRequestException("Error retrieving total product count: " + error.message);
+        }
+    }
+
     
 }

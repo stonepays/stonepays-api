@@ -81,4 +81,19 @@ export class UsersController {
             throw new BadRequestException(`Error retrieving users: ${error.message}`);
         }
     }
+
+
+
+    @Get('total_count')
+    @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets the total users count for dashboard',
+    })
+    async getTotalUserCount() {
+        try {      
+            return this.user_service.get_total_user_count();
+        } catch (error) {
+            throw new BadRequestException(`Error attaching users: ${error.message}`);
+        }
+    }
 }

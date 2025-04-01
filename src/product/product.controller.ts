@@ -98,4 +98,18 @@ export class ProductController {
             throw new BadRequestException(`Error retrieving products: ${error.message}`);
         }
     }
+
+
+    @Get('total_count')
+    @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets the total product count for dashboard',
+    })
+    async getTotalProductCount() {
+        try {      
+            return this.product.get_total_product_count();
+        } catch (error) {
+            throw new BadRequestException(`Error attaching product: ${error.message}`);
+        }
+    }
 }
