@@ -15,7 +15,7 @@ import { RoleGuard } from 'src/guards/roles.guard';
 import { Role } from 'src/enum/roles.enum';
 import { OrderService } from './order.service';
 import { OrderDto } from 'src/dto/order.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Roles } from 'src/decorators/roles.decorstor';
 
 
@@ -144,22 +144,30 @@ export class OrderController {
 
 
     @Get('/by_period')
-    @Roles(Role.ADMIN)
     @ApiOperation({
-        summary: 'Gets a chart of order by period',
+        summary: 'Gets a chart of orders within a given date range (aggregated data)',
     })
-    async getOrdersChart(@Query('period') period: 'weekly' | 'monthly' | 'yearly') {
-        try {
-            return this.order_service.get_orders_by_period(period);
+    @ApiQuery({ name: 'startDate', type: String, required: true, example: '2024-01-01' })
+    @ApiQuery({ name: 'endDate', type: String, required: true, example: '2024-07-01' })
+    async get_orders_chart(
+        @Query('startDate') startDate: string,
+        @Query('endDate') endDate: string
+    ) {
+        try {  
+            return this.order_service.get_orders_chart(startDate, endDate);
         } catch (error) {
-            throw new BadRequestException(`Error retrieving order chat: ${error.message}`);
+            throw new BadRequestException(`Error retrieving order chart: ${error.message}`);
         }
     }
 
 
      // Endpoint to get the top 10 sold products
      @Get('top_sold')
-     async getTopSoldProducts() {
+     @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets top 10 product sold',
+    })
+     async get_top_sold_products() {
         try {
             const result = await this.order_service.get_top_sold_products();
             return result;

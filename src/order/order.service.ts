@@ -204,38 +204,45 @@ export class OrderService {
     }
 
 
-    async get_orders_by_period(period: 'weekly' | 'monthly' | 'yearly'): Promise<any> {
+    async get_orders_chart(start_date_str: string, end_date_str: string): Promise<any> {
         try {
-            let startDate: Date;
-    
-            switch (period) {
-                case 'weekly':
-                    startDate = moment().startOf('isoWeek').toDate();
-                    break;
-                case 'monthly':
-                    startDate = moment().startOf('month').toDate();
-                    break;
-                case 'yearly':
-                    startDate = moment().startOf('year').toDate();
-                    break;
-                default:
-                    throw new BadRequestException("Invalid period. Use 'weekly', 'monthly', or 'yearly'.");
+            // Convert string dates to actual Date objects
+            const start_date = moment(start_date_str, 'YYYY-MM-DD').startOf('day').toDate();
+            const end_date = moment(end_date_str, 'YYYY-MM-DD').endOf('day').toDate();
+
+            // ✅ **Validation: Ensure valid date range**
+            if (!start_date || !end_date || isNaN(start_date.getTime()) || isNaN(end_date.getTime())) {
+                throw new BadRequestException('Invalid date format. Use YYYY-MM-DD.');
             }
-    
-            // Fetch only total_price and createdAt fields
-            const orders = await this.order_model
-                .find({ createdAt: { $gte: startDate } })
-                .select('total_price createdAt')
-                .exec();
-    
+            if (start_date > end_date) {
+                throw new BadRequestException('Start date must be before end date.');
+            }
+
+            // ✅ **Performance: Prevent excessive data fetch**
+            const maxRange = moment(start_date).add(6, 'months').toDate();
+            if (end_date > maxRange) {
+                throw new BadRequestException('Date range cannot exceed 6 months.');
+            }
+
+            // ✅ **MongoDB Aggregation**
+            const orders = await this.order_model.aggregate([
+                { $match: { createdAt: { $gte: start_date, $lte: end_date } } }, // Filter orders within the range
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, // Group by day
+                        total: { $sum: "$total_price" }, // Sum total_price per day
+                    },
+                },
+                { $sort: { _id: 1 } }, // Sort by date ascending
+            ]);
+
             return {
                 success: true,
-                message: `Orders retrieved for ${period}`,
-                data: orders
+                message: `Orders aggregated from ${start_date_str} to ${end_date_str}`,
+                data: orders,
             };
         } catch (error) {
-            this.logger.error(`Error retrieving ${period} orders:`, error);
-            throw new BadRequestException(`Error retrieving ${period} orders: ${error.message}`);
+            throw new BadRequestException(`Error retrieving order chart: ${error.message}`);
         }
     }
     
