@@ -144,6 +144,7 @@ export class OrderController {
 
 
     @Get('/by_period')
+    @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'Gets a chart of orders within a given date range (aggregated data)',
     })
