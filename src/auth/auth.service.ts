@@ -224,67 +224,6 @@ import {
     }
         
 
-    // Forgot Password - Sends reset password email
-    // async forgotPassword(email: string) {
-    //   const user = await this.userModel.findOne({ email });
-  
-    //   if (!user) {
-    //     throw new UnauthorizedException('User not found.');
-    //   }
-  
-    //   const resetToken = Math.random().toString(36).substr(2, 10);
-    //   const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
-  
-    //   user.reset_token = resetToken;
-    //   user.reset_token_expires_at = resetTokenExpiresAt;
-    //   await user.save();
-  
-    //   const transporter = nodemailer.createTransport({
-    //     service: 'gmail',
-    //     auth: {
-    //       user: this.config.get('EMAIL_USER'),
-    //       pass: this.config.get('EMAIL_PASS'),
-    //     },
-    //   });
-  
-    //   const mailOptions = {
-    //     from: this.config.get('EMAIL_USER'),
-    //     to: email,
-    //     subject: 'Password Reset Request',
-    //     text: `You requested to reset your password. Use this token: ${resetToken}. This token expires in 15 minutes.`,
-    //   };
-  
-    //   try {
-    //     await transporter.sendMail(mailOptions);
-    //     this.logger.log(`Password reset email sent to ${email}`);
-    //   } catch (error) {
-    //     this.logger.error('Error sending password reset email:', error);
-    //     throw new BadRequestException('Failed to send password reset email.');
-    //   }
-  
-    //   return {
-    //     message: 'Password reset token has been sent to your email.',
-    //   };
-    // }
-  
-    // Reset Password - Verifies the token and updates the password
-    // async resetPassword(email: string, token: string, newPassword: string) {
-    //   const user = await this.userModel.findOne({ email });
-  
-    //   if (!user || user.reset_token !== token || user.reset_token_expires_at < new Date()) {
-    //     throw new BadRequestException('Invalid or expired token.');
-    //   }
-  
-    //   const hash = await argon.hash(newPassword);
-    //   user.hash = hash;
-    //   user.reset_token = undefined;
-    //   user.reset_token_expires_at = undefined;
-    //   await user.save();
-  
-    //   return {
-    //     message: 'Password reset successful. You can now sign in with your new password.',
-    //   };
-    // }
-
+    
    
 }

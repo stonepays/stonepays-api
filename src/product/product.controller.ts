@@ -9,7 +9,7 @@ import { Roles } from 'src/decorators/roles.decorstor';
 
 
 
-@UseGuards(AuthGuard, RoleGuard)
+
 @ApiTags('Product')
 @ApiBearerAuth('access-token')
 @Controller('product')
@@ -20,6 +20,7 @@ export class ProductController {
 
 
     @Post('create_product')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'This API create a product'
@@ -37,6 +38,7 @@ export class ProductController {
 
 
     @Put('update_product/:id')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'This API updates a product'
@@ -55,6 +57,7 @@ export class ProductController {
 
 
     @Delete('delete_product/:id')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'This api allows the admin user to delete an existing product'
@@ -71,6 +74,7 @@ export class ProductController {
 
 
     @Get('get_product/:id')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api gets an existing product by id'
@@ -101,6 +105,7 @@ export class ProductController {
 
 
     @Get('total_count')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'Gets the total product count for dashboard',
