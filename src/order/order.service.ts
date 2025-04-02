@@ -247,12 +247,14 @@ export class OrderService {
     }
     
     
-     // Get the top 10 sold products with total amount
-     async get_top_sold_products(): Promise<any> {
+    async get_top_sold_products(): Promise<any> {
         try {
             // Aggregate order data to get the count of each product sold and the total revenue
             const result = await this.order_model.aggregate([
                 { $unwind: '$products' }, // Flatten the products array in each order
+                { 
+                    $match: { 'products.product_id': { $ne: null } } // Ensure product_id is not null
+                },
                 {
                     $group: {
                         _id: '$products.product_id', // Group by product_id
@@ -263,11 +265,32 @@ export class OrderService {
                 { $sort: { total_sold: -1 } }, // Sort by total_sold in descending order
                 { $limit: 10 }, // Limit the results to top 10
             ]);
-
+    
+            // If no results are found, return an appropriate message
+            if (!result || result.length === 0) {
+                return {
+                    success: true,
+                    message: 'No products found for the top sold products.',
+                    data: [],
+                };
+            }
+    
             // Map the result to include product details
             const topProducts = await Promise.all(
                 result.map(async (item) => {
                     const product = await this.product_model.findById(item._id).exec();
+    
+                    // If the product is not found, return a fallback object
+                    if (!product) {
+                        return {
+                            product_id: item._id,
+                            product_name: 'Unknown Product',
+                            total_sold: item.total_sold,
+                            total_revenue: item.total_revenue.toFixed(2), // Formatting the total revenue to two decimal places
+                            product_img: '',
+                        };
+                    }
+    
                     return {
                         product_id: product._id,
                         product_name: product.product_name,
@@ -277,7 +300,7 @@ export class OrderService {
                     };
                 }),
             );
-
+    
             return {
                 success: true,
                 message: 'Top 10 sold products retrieved successfully',
@@ -288,4 +311,5 @@ export class OrderService {
             throw new BadRequestException('Error retrieving top sold products: ' + error.message);
         }
     }
+    
 }
