@@ -73,6 +73,22 @@ export class ProductController {
     }
 
 
+    @Get('get_products')
+    @Roles(Role.ADMIN, Role.USER)
+    @ApiOperation({
+        summary: 'Get all products',
+    })
+
+    async get_all_product() {
+        try {
+            return await this.product.get_all_procduct();
+        } catch (error) {
+            throw new BadRequestException(`Error retrieving products: ${error.message}`);
+        }
+    }
+
+
+
     @Get('get_product/:id')
     @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
