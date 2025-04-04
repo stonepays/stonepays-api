@@ -333,5 +333,36 @@ export class OrderService {
             data: order,
         };
     }
-          
+      
+    
+    async get_total_order_amount() {
+        try {
+            const result = await this.order_model.aggregate([
+                {
+                    $match: {
+                        order_status: { $regex: /^approved$/i } // case-insensitive match
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalAmount: { $sum: "$total_price" }
+                    }
+                }
+            ]);
+    
+
+            const revenue = result[0]?.totalAmount || 0;
+
+            return {
+                success: true,
+                message: "Total revenue retrieve",
+                data: revenue
+            };
+        } catch (error) {
+            this.logger.error(`Failed to calculate total order amount: ${error.message}`);
+            throw new BadRequestException('Unable to get total order amount');
+        }
+    }
+    
 }

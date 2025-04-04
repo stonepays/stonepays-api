@@ -181,7 +181,7 @@ export class OrderController {
     }
 
 
-     // Endpoint to get the top 10 sold products
+     
      @Get('top_sold')
      @Roles(Role.ADMIN)
     @ApiOperation({
@@ -193,6 +193,21 @@ export class OrderController {
             return result;
         } catch (error) {
             throw new BadRequestException(`Error retrieving top 10 order: ${error.message}`);
+        }
+    }
+
+
+     @Get('total_revenue')
+     @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets the total revenue amount',
+    })
+     async get_total_order_amount() {
+        try {
+            const result = await this.order_service.get_total_order_amount();
+            return result;
+        } catch (error) {
+            throw new BadRequestException(`Error retrieving total order revenue: ${error.message}`);
         }
     }
 }
