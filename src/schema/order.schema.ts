@@ -36,7 +36,7 @@ export class Order {
             ref: "Product",
             required: true
         },
-        product_category: {
+        product_category_id: {
             type: String,
             ref: "Product",
             required: true
@@ -53,18 +53,24 @@ export class Order {
     }])
     products: {
         product_id: Types.ObjectId;
-        product_category: Types.ObjectId;
+        product_category_id: Types.ObjectId;
         quantity: number;
         price: number;
     }[];
 
-    // ✅ Order Status
+
     @Prop({
         required: true,
-        default: "Pending"
+        default: "not paid"
     })
-    status: string;
+    payment_status: string;
 
+    @Prop({
+        required: false, 
+        default: null,  
+    })
+    order_status: string;
+    
     // ✅ Total Price
     @Prop({
         required: true
@@ -85,7 +91,7 @@ export class Order {
     @Prop({
         type: String,
         required: true,
-        default: "paystack"
+        default: "palmpay"
     })
     payment_method: string;
 

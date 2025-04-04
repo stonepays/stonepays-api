@@ -89,15 +89,17 @@ export class ProductController {
         }
     }
 
-    @Get('get_products')
+    @Get('get_products/:product_category_id')
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'Get products by category ID',
     })
 
-    async getProductsByCategory() {
+    async getProductsByCategory(
+        @Param('product_category_id') product_category_id: string
+    ) {
         try {
-            return await this.product.get_product_by_category();
+            return await this.product.get_product_by_category(product_category_id);
         } catch (error) {
             throw new BadRequestException(`Error retrieving products: ${error.message}`);
         }

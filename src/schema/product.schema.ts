@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
+import { ProductCategory } from "./product-category.schema";
+
 
 export type ProductDocument = Product & Document;
 
@@ -17,8 +19,10 @@ export class Product {
 
     @Prop({
         required: true,
+        type: Types.ObjectId,
+        ref: "ProductCategory"
     })
-    product_category: string; 
+    product_category_id: Types.ObjectId;
 
     @Prop({
         required: true

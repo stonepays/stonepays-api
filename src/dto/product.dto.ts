@@ -12,11 +12,11 @@ export class ProductDto {
     product_name: string;
 
     @ApiProperty({
-        example: "digital product",
+        example: "60d0fe4f5311236168a109ca"
     })
-    @IsNotEmpty()
+    @IsMongoId()
     @IsString()
-    product_category: string;
+    product_category_id: string;
 
     @ApiProperty({ example: 1000 })
     @IsNotEmpty()

@@ -58,7 +58,7 @@ export class OrderService {
 
                 products.push({
                     product_id: productData._id,
-                    product_category: productData.product_category,
+                    product_category_id: productData.product_category_id,
                     quantity: product.quantity,
                     price: product.price,
                 });
@@ -70,7 +70,7 @@ export class OrderService {
                 temp_order_id: tempOrderId,
                 products,
                 total_price: dto.total_price,
-                status: 'Pending',
+                payment_status: "Pending"
             });
 
             const saved_order = await order.save();
@@ -311,5 +311,27 @@ export class OrderService {
             throw new BadRequestException('Error retrieving top sold products: ' + error.message);
         }
     }
-    
+
+
+    async update_order_status(order_id: string): Promise<any> {
+        const order = await this.order_model.findById(order_id).exec();
+      
+        if (!order) {
+          throw new NotFoundException('Order does not exist!');
+        }
+      
+        if (order.order_status === 'Approved') {
+          throw new BadRequestException('Order has already been approved!');
+        }
+      
+        order.order_status = 'Approved';
+        await order.save();
+      
+        return {
+            success: true,
+            message: 'Order status updated successfully!',
+            data: order,
+        };
+    }
+          
 }

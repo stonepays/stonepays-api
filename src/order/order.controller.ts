@@ -30,6 +30,7 @@ export class OrderController {
 
     // ✅ Create Order (Guest or Authenticated User)
     @Post('create_order')
+    @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'Create an order (Guest or Authenticated User)',
     })
@@ -79,7 +80,7 @@ export class OrderController {
         }
     }
 
-    // ✅ Update Order
+    // ✅ Update Order 
     @Put('update_order/:id')
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
@@ -95,6 +96,23 @@ export class OrderController {
             throw new BadRequestException(`Error updating order: ${error.message}`);
         }
     }
+
+
+    @Put('update_order_status/:id')
+    @Roles(Role.ADMIN, Role.USER)
+    @ApiOperation({
+        summary: 'Update an order status',
+    })
+    async update_order_status(
+        @Param('id') id: string,
+    ) {
+        try {
+            return this.order_service.update_order_status(id);
+        } catch (error) {
+            throw new BadRequestException(`Error updating order status: ${error.message}`);
+        }
+    }
+
 
     // ✅ Delete Order
     @Delete('delete_order/:id')

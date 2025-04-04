@@ -50,6 +50,7 @@ export class AuthController {
     return this.authService.sign_in(dto);
   }
 
+  @UseGuards(AuthGuard)
   @Get('signed_in_user')
   @ApiOperation({
     summary: 'This API returns the signed-in user',

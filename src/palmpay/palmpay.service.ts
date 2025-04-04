@@ -39,7 +39,7 @@ export class PalmpayService {
 
       const order = await this.order_model.findById(order_id).exec();
       if (!order) throw new BadRequestException('Order not found');
-      if (order.status === 'Paid') throw new BadRequestException('Order has already been paid');
+      if (order.payment_status === 'Paid') throw new BadRequestException('Order has already been paid');
 
       const user = await this.user_model.findById(order.user_details.user_id).exec();
       if (!user) throw new BadRequestException('User not found');
@@ -140,6 +140,16 @@ export class PalmpayService {
   
       if (response.data.respCode !== '00000000' || response.data.data.orderStatus !== 0) {
         throw new BadRequestException(response.data.message || 'Payment verification failed');
+      }
+
+      if (order.payment_status !== 'Paid') {
+        order.payment_status = 'Paid';
+  
+        if (order.order_status === null) {
+          order.order_status = 'Pending Approval';
+        }
+  
+        await order.save(); // ✅ Persist changes
       }
   
       return response.data.data;

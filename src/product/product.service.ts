@@ -159,9 +159,13 @@ export class ProductService {
 
 
     // get products by category id
-    async get_product_by_category() {
+    async get_product_by_category(product_category_id: string) {
         try {
-            const products = await this.product_model.find().exec();
+            const products = await this.product_model.find({product_category_id}).exec();
+
+            if (!products) {
+                throw new BadRequestException('Products with product categoty does not exist.')
+            }
     
             return {
                 success: true,

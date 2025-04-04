@@ -38,7 +38,7 @@ class ProductItemDto {
     price: number;
 }
 
-export class OrderDto {
+export class CartDto {
     @ApiProperty({
         example: "60d0fe4f5311236168a109ce",
         description: "User ID (Required for authenticated users, optional for guests)",
