@@ -35,7 +35,7 @@ export class CartController {
         }
     }
 
-    @Post('update_cart')
+    @Put('update_cart')
     @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
