@@ -8,7 +8,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/decorators/roles.decorstor';
 
 
-@UseGuards(AuthGuard, RoleGuard)
+
 @ApiTags('Product-Category')
 @ApiBearerAuth('access-token')
 @Controller('product-category')
@@ -18,6 +18,7 @@ export class ProductCategoryController {
     ) {}
 
     @Post('create_product_category')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'This API create a product category'
@@ -34,6 +35,7 @@ export class ProductCategoryController {
 
 
     @Put('update_product_category/:id')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'This API updates a product category'
@@ -51,6 +53,7 @@ export class ProductCategoryController {
 
 
     @Delete('delete_product_category/:id')
+    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     @ApiOperation({
         summary: 'This api allows the admin user to delete an existing product category'
@@ -84,7 +87,7 @@ export class ProductCategoryController {
     
 
     @Get('get_product_categoryies')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api gets all existing product categories'
     })
