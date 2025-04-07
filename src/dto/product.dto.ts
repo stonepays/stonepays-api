@@ -14,7 +14,6 @@ export class ProductDto {
     @ApiProperty({
         example: "60d0fe4f5311236168a109ca"
     })
-    @IsMongoId()
     @IsString()
     product_category_id: string;
 

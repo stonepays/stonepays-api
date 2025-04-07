@@ -19,10 +19,8 @@ export class Product {
 
     @Prop({
         required: true,
-        type: Types.ObjectId,
-        ref: "ProductCategory"
     })
-    product_category_id: Types.ObjectId;
+    product_category_id: string;
 
     @Prop({
         required: true
