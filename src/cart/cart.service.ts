@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cart, CartDocument } from 'src/schema/cart.schema';
 import { Model, Types } from 'mongoose';
 import { CartDto } from 'src/dto/cart.dto';
+import { User, UserDocument } from 'src/schema/user.schema';
 
 @Injectable()
 export class CartService {
@@ -12,140 +13,165 @@ export class CartService {
 
 
     async add_to_cart(dto: CartDto) {
-        const { user_id, temp_order_id, products } = dto;
-    
-        const filter = user_id
-            ? { 'user_details.user_id': new Types.ObjectId(user_id) }
-            : { temp_order_id: new Types.ObjectId(temp_order_id) };
-    
-        const existingCart = await this.cart_model.findOne(filter);
-        if (existingCart) {
-            return {
-                success: false,
-                message: 'Cart already exists. Use update_cart instead.',
-            };
-        }
-    
-        const total_price = products.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0,
-        );
-    
-        const cart = new this.cart_model({
-            user_details: user_id
-                ? { user_id: new Types.ObjectId(user_id) }
-                : null,
-            temp_order_id: temp_order_id ? new Types.ObjectId(temp_order_id) : null,
-            products,
-            total_price,
-        });
-    
-        return {
-            success: true,
-            message: 'Cart added successfully!',
-            data: await cart.save(),
-        };
-    }
-    
+       try {
+            const { user_id, products } = dto;
 
-    async update_cart(dto: CartDto) {
-        const { user_id, temp_order_id, products } = dto;
-    
-        const filter = user_id
-            ? { 'user_details.user_id': new Types.ObjectId(user_id) }
-            : { temp_order_id: new Types.ObjectId(temp_order_id) };
-    
-        const cart = await this.cart_model.findOne(filter);
-    
-        if (!cart) {
-            return {
-                success: false,
-                message: 'Cart does not exist. Use add_to_cart first.',
-            };
-        }
-    
-        for (const new_product of products) {
-            const index = cart.products.findIndex(
-                (p) => p.product_id.toString() === new_product.product_id,
+            if (!user_id || !Types.ObjectId.isValid(user_id)) {
+                throw new NotFoundException('Valid user ID is required');
+            }
+
+            const filter = { 'user_details.user_id': new Types.ObjectId(user_id) };
+
+            const existingCart = await this.cart_model.findOne(filter);
+            if (existingCart) {
+                return {
+                    success: false,
+                    message: 'Cart already exists. Use update_cart instead.',
+                };
+            }
+
+            const total_price = products.reduce(
+                (sum, item) => sum + item.price * item.quantity,
+                0,
             );
-    
-            if (index !== -1) {
-                cart.products[index].quantity += new_product.quantity;
-            } else {
-                cart.products.push(new_product as any);
-            }
-        }
-    
-        cart.total_price = cart.products.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0,
-        );
-    
-        await cart.save();
-    
-        return {
-            success: true,
-            message: 'Cart updated successfully!',
-            data: cart,
-        };
-    }
-    
 
+            const cart = new this.cart_model({
+                user_details: {
+                    user_id: new Types.ObjectId(user_id),
+                },
+                products,
+                total_price,
+            });
 
-    async get_cart(userId: string | null, temp_cart_id: string | null  ) {
-        const filter = userId
-            ? { 'user_details.user_id': new Types.ObjectId(userId)}
-            : { temp_cart_id: new Types.ObjectId(temp_cart_id)};
-
-            const cart = await this.cart_model.findOne(filter);
-            
-            if (!cart) {
-                throw new NotFoundException('Cart not found')
-            }
+            const savedCart = await cart.save();
 
             return {
                 success: true,
-                message: 'Cart retrieved successfully!',
-                data: cart
-            }
+                message: 'Cart added successfully!',
+                data: savedCart,
+            };
+       } catch (error) {
+            throw new BadRequestException('Error adding to cart: ' + error.message);
+       }
     }
+
+    async update_cart(dto: CartDto) {
+        try {
+            const { user_id, products } = dto;
+
+            if (!user_id || !Types.ObjectId.isValid(user_id)) {
+                throw new NotFoundException('Valid user ID is required');
+            }
+
+            const filter = { 'user_details.user_id': new Types.ObjectId(user_id) };
+
+            const cart = await this.cart_model.findOne(filter);
+
+            if (!cart) {
+                return {
+                    success: false,
+                    message: 'Cart does not exist. Use add_to_cart first.',
+                };
+            }
+
+            for (const new_product of products) {
+                const index = cart.products.findIndex(
+                    (p) => p.product_id.toString() === new_product.product_id,
+                );
+
+                if (index !== -1) {
+                    cart.products[index].quantity += new_product.quantity;
+                } else {
+                    cart.products.push(new_product as any);
+                }
+            }
+
+            cart.total_price = cart.products.reduce(
+                (sum, item) => sum + item.price * item.quantity,
+                0,
+            );
+
+            const updatedCart = await cart.save();
+
+            return {
+                success: true,
+                message: 'Cart updated successfully!',
+                data: updatedCart,
+            };
+        } catch (error) {
+            throw new BadRequestException('Error updating cart: ' + error.message);
+        }
+    }
+
+    async get_cart(userId: string | null) {
+        try {
+            if (!userId || !Types.ObjectId.isValid(userId)) {
+                throw new NotFoundException('Invalid or missing user ID');
+            }
+        
+            const filter = { 'user_details.user_id': new Types.ObjectId(userId) };
+        
+            const cart = await this.cart_model.findOne(filter);
+        
+            if (!cart) {
+                throw new NotFoundException('Cart not found');
+            }
+        
+            return {
+                success: true,
+                message: 'Cart retrieved successfully!',
+                data: cart,
+            };
+        } catch (error) {
+            throw new BadRequestException('Error retrieving from cart: ' + error.message);
+        }
+    }
+    
 
 
     async remove_from_cart(user_id: string, product_id: string) {
-        const cart = await this.cart_model.findOne({
-            'user_details.user_id': new Types.ObjectId(user_id),
-        });
-
-
-        if (!cart) {
-            throw new NotFoundException('Cart not found');
-        }
-
-        cart.products = cart.products.filter(
-            (p) => p.product_id.toString() !== product_id,
-        );
-
-        cart.total_price = cart.products.reduce(
-            (sum, item) => sum + item.price * item.quantity, 0,
-        );
-
-
-        return {
-            success: true,
-            message: 'Product removed from cart successfully!',
-            data: await cart.save()
+        try {
+            const cart = await this.cart_model.findOne({
+                'user_details.user_id': new Types.ObjectId(user_id),
+            });
+    
+    
+            if (!cart) {
+                throw new NotFoundException('Cart not found');
+            }
+    
+            cart.products = cart.products.filter(
+                (p) => p.product_id.toString() !== product_id,
+            );
+    
+            cart.total_price = cart.products.reduce(
+                (sum, item) => sum + item.price * item.quantity, 0,
+            );
+    
+    
+            return {
+                success: true,
+                message: 'Product removed from cart successfully!',
+                data: await cart.save()
+            }
+        } catch (error) {
+            throw new BadRequestException('Error removing from cart: ' + error.message);
         }
     }
 
 
     async clear_cart(user_id: string) {
-        const cart = await this.cart_model.findOneAndDelete({
-            'user_details.user_id': new Types.ObjectId(user_id),
-        });
-
-        return {
-            success: true,
-            message: 'Cart cleared successfully!'
+        try {
+            const cart = await this.cart_model.findOneAndDelete({
+                'user_details.user_id': new Types.ObjectId(user_id),
+            });
+    
+            return {
+                success: true,
+                message: 'Cart cleared successfully!'
+            }
+        } catch (error) {
+            throw new BadRequestException('Error clearing cart: ' + error.message);
         }
     }
 }

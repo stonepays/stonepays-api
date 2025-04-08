@@ -314,27 +314,74 @@ export class OrderService {
 
 
     async update_order_status(order_id: string): Promise<any> {
-        const order = await this.order_model.findById(order_id).exec();
+        try {
+            const order = await this.order_model.findById(order_id).exec();
       
-        if (!order) {
-          throw new NotFoundException('Order does not exist!');
+            if (!order) {
+            throw new NotFoundException('Order does not exist!');
+            }
+        
+            if (order.order_status === 'Approved') {
+            throw new BadRequestException('Order has already been approved!');
+            }
+        
+            order.order_status = 'Approved';
+            await order.save();
+        
+            return {
+                success: true,
+                message: 'Order status updated successfully!',
+                data: order,
+            };
+        } catch (error) {
+            this.logger.error('Error updating order status:', error);
+            throw new BadRequestException('Error updating order status: ' + error.message);   
         }
-      
-        if (order.order_status === 'Approved') {
-          throw new BadRequestException('Order has already been approved!');
-        }
-      
-        order.order_status = 'Approved';
-        await order.save();
-      
-        return {
-            success: true,
-            message: 'Order status updated successfully!',
-            data: order,
-        };
     }
-      
+
+
+    async get_order_by_user(user_id: string): Promise<any> {
+        try {
+            // Log incoming value
+            this.logger.debug(`Received user_id: ${user_id}`);
+        
+            // Validate user ID
+            if (!user_id || typeof user_id !== 'string' || !Types.ObjectId.isValid(user_id)) {
+                this.logger.warn(`Invalid user ID received: ${user_id}`);
+                throw new BadRequestException('Invalid user ID');
+            }
     
+            const objectUserId = new Types.ObjectId(user_id);
+    
+            // Check if user exists
+            const user = await this.user_model.findById(objectUserId).exec();
+            if (!user) {
+                throw new NotFoundException('User does not exist.');
+            }
+    
+            // Fetch orders
+            const orders = await this.order_model
+                .find({ 'user_details.user_id': objectUserId })
+                .sort({ createdAt: -1 });
+    
+            return {
+                success: true,
+                message: 'Orders attached to user retrieved successfully!',
+                data: orders,
+            };
+        } catch (error) {
+            // Log all error context
+            this.logger.error(`Failed to retrieve orders attached to user: ${error.message}`);
+           
+            if (error instanceof BadRequestException || error instanceof NotFoundException) {
+                throw error;
+            }
+    
+            throw new BadRequestException('Unable to get orders attached to user');
+        }
+    }
+    
+        
     async get_total_order_amount() {
         try {
             const result = await this.order_model.aggregate([

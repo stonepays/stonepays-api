@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
-import { Product } from "./product.schema";
-import { User } from "./user.schema";
 
 
 export type CartDocument = Cart & Document;
@@ -10,30 +8,16 @@ export type CartDocument = Cart & Document;
 export class Cart {
     @Prop({
         required: true,
-        type: Types.ObjectId,
-        ref: "User"
     })
-    user_id: Types.ObjectId;
+    user_id: string;
 
-  
-    @Prop({
-        type: Types.ObjectId,
-        unique: true,
-        sparse: true, 
-        index: true    
-    })
-    temp_order_id: Types.ObjectId | null;
-
-  
     @Prop([{
         product_id: {
-            type: Types.ObjectId,
-            ref: "Product",
+            type: String,
             required: true
         },
         product_category_id: {
             type: String,
-            ref: "Product",
             required: true
         },
 
@@ -47,8 +31,8 @@ export class Cart {
         },
     }])
     products: {
-        product_id: Types.ObjectId;
-        product_category_id: Types.ObjectId;
+        product_id: string;
+        product_category_id: string;
         quantity: number;
         price: number;
     }[];

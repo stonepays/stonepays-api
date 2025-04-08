@@ -9,7 +9,7 @@ import { Roles } from 'src/decorators/roles.decorstor';
 
 
 
-
+@UseGuards(AuthGuard, RoleGuard)
 @ApiTags('Cart')
 @ApiBearerAuth('access-token')
 @Controller('cart')
@@ -20,7 +20,6 @@ export class CartController {
 
 
     @Post('add_cart')
-    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api adds product to cart'
@@ -36,7 +35,6 @@ export class CartController {
     }
 
     @Put('update_cart')
-    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api update products in a cart'
@@ -53,7 +51,6 @@ export class CartController {
 
 
     @Get('get_cart/:user_id')
-    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api gets product in a cart'
@@ -70,7 +67,6 @@ export class CartController {
 
 
     @Delete('remove_product_cart/:user_id/:product_id')
-    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api removes a product from cart'
@@ -88,7 +84,6 @@ export class CartController {
 
 
     @Delete('clear_cart/:user_id')
-    @UseGuards(AuthGuard, RoleGuard)
     @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This api deletes cart'

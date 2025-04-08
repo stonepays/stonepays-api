@@ -210,4 +210,21 @@ export class OrderController {
             throw new BadRequestException(`Error retrieving total order revenue: ${error.message}`);
         }
     }
+
+
+     @Get('get_order_by_user/:user_id')
+     @Roles(Role.ADMIN)
+    @ApiOperation({
+        summary: 'Gets the orders attached to users',
+    })
+     async get_order_by_user(
+        @Param('user_id') user_id: string
+     ) {
+        try {
+            const result = await this.order_service.get_order_by_user(user_id);
+            return result;
+        } catch (error) {
+            throw new BadRequestException(`Error retrieving orders attached to user: ${error.message}`);
+        }
+    }
 }
