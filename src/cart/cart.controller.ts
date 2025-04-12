@@ -59,11 +59,26 @@ export class CartController {
         @Param('user_id') user_id: string 
     ) {
         try {
-            return this.get_cart(user_id);
+            return this.cart.get_cart(user_id);
         } catch (error) {
             throw new BadRequestException(`Error retrieving cart: ${error.message}`);
         }
     }
+
+
+    @Get('get_cart_count')
+    @Roles(Role.ADMIN, Role.USER)
+    @ApiOperation({
+    summary: 'This API gets total products in the cart for a user',
+    })
+    async get_cart_count(@Param('user_id') user_id: string) {
+    try {
+        return await this.cart.get_total_cart_count(user_id);
+    } catch (error) {
+        throw new BadRequestException(`Error retrieving cart count: ${error.message}`);
+    }
+    }
+
 
 
     @Delete('remove_product_cart/:user_id/:product_id')

@@ -179,4 +179,51 @@ export class CartService {
             throw new BadRequestException('Error clearing cart: ' + error.message);
         }
     }
+
+
+    async get_total_cart_count(user_id: string): Promise<any> {
+        try {
+          console.log('🧪 Received user_id:', user_id);
+      
+          if (!user_id || !Types.ObjectId.isValid(user_id)) {
+            console.log('❌ Invalid user ID');
+            throw new NotFoundException('Valid user ID is required');
+          }
+      
+          const user = await this.user_model.findById(user_id);
+          if (!user) {
+            console.log('❌ User not found in DB');
+            throw new NotFoundException('User not found');
+          }
+      
+          const cart = await this.cart_model.findOne({ user_id });
+      
+          if (!cart || !Array.isArray(cart.products) || cart.products.length === 0) {
+            console.log('🛒 Cart is empty');
+            return {
+              success: true,
+              message: 'Cart is empty',
+              data: 0,
+            };
+          }
+      
+          const total_count = cart.products.reduce((sum, item) => {
+            return sum + (item?.quantity || 0);
+          }, 0);
+      
+          console.log('✅ Total product count:', total_count);
+      
+          return {
+            success: true,
+            message: 'Total cart count retrieved successfully',
+            data: total_count,
+          };
+        } catch (error) {
+          console.error('🔥 Error in get_total_cart_count:', error.message);
+          throw new BadRequestException('Error retrieving total cart count: ' + error.message);
+        }
+      }
+      
+      
+      
 }
