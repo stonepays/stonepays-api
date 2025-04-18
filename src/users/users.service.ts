@@ -15,23 +15,23 @@ export class UsersService {
         private cloudinary_service: CloudinaryService,
     ) {}
 
-
-    async update_user(id: string, dto: SignUpDto, base64_image?: string): Promise<any> {
-
+    // update user
+    async update_user(id: string, dto: Partial<SignUpDto>, base64_image?: string): Promise<any> {
         try {
             const existing_user = await this.user_model.findById(id).exec();
-
+    
             if (!existing_user) {
                 throw new BadRequestException('User does not exist');
             }
-
+    
             let image_url = existing_user.user_img;
-
+    
+            // Handle base64 image upload if provided
             if (base64_image) {
                 if (!base64_image.startsWith('data:image/')) {
                     throw new BadRequestException('Invalid user image. Provide a valid base64-encoded image');
-                } 
-
+                }
+    
                 try {
                     const public_id = `user_profiles/${Date.now()}`;
                     const upload_result = await this.cloudinary_service.uploadImage(base64_image, public_id);
@@ -40,25 +40,29 @@ export class UsersService {
                     this.logger.error('Error uploading user image', error);
                     throw new BadRequestException('Failed to upload user image', error);
                 }
-
-
-                existing_user.first_name = dto.first_name || existing_user.first_name;
-                existing_user.last_name = dto.last_name || existing_user.last_name;
-                existing_user.email = dto.email || existing_user.email;
-                existing_user.hash = dto.password || existing_user.hash;
-                existing_user.user_img = existing_user.user_img;
-
-                await existing_user.save();
-
-                return {
-                    success: true,
-                    message: 'User updated successfully!',
-                    data: existing_user,
+            }
+    
+            // Dynamically update fields from the DTO
+            const updatableFields = ['first_name', 'last_name', 'email', 'password'];
+            for (const field of updatableFields) {
+                if (dto[field]) {
+                    existing_user[field] = field === 'password' ? dto[field] : dto[field];
                 }
             }
+    
+            // Update the user image if it was changed
+            existing_user.user_img = image_url;
+    
+            await existing_user.save();
+    
+            return {
+                success: true,
+                message: 'User updated successfully!',
+                data: existing_user,
+            };
         } catch (error) {
             this.logger.error(`Error updating user: ${error.message}`);
-            throw new BadRequestException('An error occured while updating user.');
+            throw new BadRequestException('An error occurred while updating user.');
         }
     }
 
