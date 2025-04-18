@@ -9,6 +9,7 @@ import { ProductCategoryModule } from './product-category/product-category.modul
 import { OrderModule } from './order/order.module';
 import { PalmpayModule } from './palmpay/palmpay.module';
 import { CartModule } from './cart/cart.module';
+import { ExchangeRateModule } from './exchange-rate/exchange-rate.module';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { CartModule } from './cart/cart.module';
     OrderModule,
     PalmpayModule,
     ProductCategoryModule,
-    CartModule
+    CartModule,
+    ExchangeRateModule
   ],
   controllers: [],
   providers: [],
