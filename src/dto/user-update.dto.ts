@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEmail, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsEmail, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class UserUpdateDto {
   @IsOptional()
@@ -15,6 +15,10 @@ export class UserUpdateDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  @MinLength(8, { message: 'Password too short, it should be a minimum of 8 characters.' })
+  @MaxLength(15, { message: 'Password too long, it should be a maximum of 15 characters.' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/, {
+    message: 'Password must include uppercase, lowercase, number, and special character.',
+  })
   password?: string;
 }

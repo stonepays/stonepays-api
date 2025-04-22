@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import { SignUpDto } from 'src/dto/sign-up.dto';
 import { User, UserDocument } from 'src/schema/user.schema';
 import { CloudinaryService } from 'src/utils/cloudinary/cloudinary.service';
-import * as bcrypt from 'bcrypt';
+import * as argon from 'argon2';
 import { UserUpdateDto } from 'src/dto/user-update.dto';
 
 @Injectable()
@@ -53,7 +53,7 @@ async update_user(id: string, dto: UserUpdateDto, base64_image?: string): Promis
 
         // Hash and update password if provided
         if (dto.password) {
-            const hashedPassword = await bcrypt.hash(dto.password, 10);
+            const hashedPassword = await argon.hash(dto.password);
             existing_user.hash = hashedPassword;
         }
 
@@ -136,7 +136,7 @@ async update_user(id: string, dto: UserUpdateDto, base64_image?: string): Promis
     // ✅ Get Total User Count
     async get_total_user_count(): Promise<any> {
         try {
-            const total_count = await this.user_model.countDocuments();
+            const total_count = await this.user_model.countDocuments({ role: 'user' }).exec();
             return {
                 success: true,
                 message: "Total users count retrieved successfully",
