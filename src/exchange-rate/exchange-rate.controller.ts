@@ -11,13 +11,13 @@ import { Roles } from 'src/decorators/roles.decorstor';
 
 @ApiTags('Exchange Rate')
 @ApiBearerAuth('access-token')
-@UseGuards(AuthGuard, RoleGuard)
 @Controller('exchange-rate')
 export class ExchangeRateController {
     constructor(
         private readonly exchange_rate_service: ExchangeRateService,
     ) {}
 
+    @UseGuards(AuthGuard, RoleGuard)
     @Post('create_exchange_rate')
     @Roles(Role.ADMIN)
     @ApiOperation({
@@ -33,6 +33,7 @@ export class ExchangeRateController {
         }
     }
 
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('get_all_exchange_rates')
     @Roles(Role.ADMIN)
     @ApiOperation({
@@ -46,6 +47,8 @@ export class ExchangeRateController {
         }
     }
 
+
+    @UseGuards(AuthGuard, RoleGuard)
     @Get('get_exchange_rate_by_id/:id')
     @Roles(Role.ADMIN)
     @ApiOperation({
@@ -59,6 +62,7 @@ export class ExchangeRateController {
         }
     }
 
+    @UseGuards(AuthGuard, RoleGuard)
     @Put('update_exchange_rate/:id')
     @Roles(Role.ADMIN)
     @ApiOperation({
@@ -72,6 +76,8 @@ export class ExchangeRateController {
         }
     }
 
+
+    @UseGuards(AuthGuard, RoleGuard)
     @Delete('delete_exchange_rate/:id')
     @Roles(Role.ADMIN)
     @ApiOperation({
@@ -85,8 +91,9 @@ export class ExchangeRateController {
         }
     }
 
+
     @Get('get_current_exchange_rate')
-    @Roles(Role.ADMIN)
+    @Roles(Role.ADMIN, Role.USER)
     @ApiOperation({
         summary: 'This API get the current exchange rate'
     })
