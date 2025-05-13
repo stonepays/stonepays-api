@@ -8,8 +8,9 @@ import * as md5 from 'md5';
 import { Order, OrderDocument } from 'src/schema/order.schema';
 import { User, UserDocument } from 'src/schema/user.schema';
 import * as nodemailer from 'nodemailer';
-import jsrsasign from 'jsrsasign';
+const jsrsasign = require('jsrsasign');
 const { KEYUTIL, KJUR, hextob64, b64utohex } = jsrsasign;
+
 
 @Injectable()
 export class PalmpayService {
