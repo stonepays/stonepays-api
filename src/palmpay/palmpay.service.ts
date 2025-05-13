@@ -109,7 +109,9 @@ export class PalmpayService {
 
 
 
- async handle_webhook_notification(payload: any): Promise<void> {
+
+
+async handle_webhook_notification(payload: any): Promise<void> {
   const {
     appId,
     orderId,
@@ -156,14 +158,14 @@ export class PalmpayService {
   console.log('Sorted Params for Signature:', sortedParams);
 
   try {
-    const publicKey = KEYUTIL.getKey(this.public_key);
-    const signatureVerifier = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+    const decodedSign = decodeURIComponent(sign); // Important: decode before verifying
+    const publicKey = jsrsasign.KEYUTIL.getKey(this.public_key); // Make sure this is a PEM-formatted key
+
+    const signatureVerifier = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
     signatureVerifier.init(publicKey);
     signatureVerifier.updateString(sortedParams);
 
-    const decodedSign = hextob64(b64utohex(sign));
-    const isValid = signatureVerifier.verify(decodedSign);
-
+    const isValid = signatureVerifier.verify(decodedSign); // decodedSign is base64
     console.log('Signature valid:', isValid);
 
     if (!isValid) {
@@ -174,40 +176,15 @@ export class PalmpayService {
     throw new BadRequestException('Signature verification failed');
   }
 
-  // Step 2: Find Order
+  // Step 2: Find and handle order
   const order = await this.order_model.findOne({ orderNo });
   if (!order) {
     console.error('Order not found:', orderNo);
     throw new BadRequestException('Order not found');
   }
 
-  // Step 3: Update Order if not already paid
-  if (order.payment_status !== 'Paid') {
-    order.order_status = 'success';
-    order.payment_status = 'Paid';
-    order.transaction_reference = orderId;
-    order.payment_date = new Date(Number(completeTime));
-    await order.save();
-    console.log('Order updated successfully');
-  } else {
-    console.log('Order already marked as paid');
-  }
-
-  // Step 4: Send Email Notification
-  const user = await this.user_model.findById(order.user_details.user_id);
-  if (user?.email) {
-    try {
-      await this.transporter.sendMail({
-        from: '"PalmPay Payments" <no-reply@yourapp.com>',
-        to: user.email,
-        subject: 'Payment Received',
-        text: `Dear ${user.first_name || 'User'}, your payment of ₦${(amount / 100).toFixed(2)} was received successfully via PalmPay.`,
-      });
-      console.log('Payment email sent to:', user.email);
-    } catch (emailErr) {
-      console.error('Failed to send payment confirmation email:', emailErr);
-    }
-  }
+  // TODO: Update the order or take other actions
+  console.log('Order found, processing...');
 }
 
 
