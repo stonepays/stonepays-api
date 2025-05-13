@@ -12,6 +12,34 @@ const jsrsasign = require('jsrsasign');
 const { KEYUTIL, KJUR, hextob64, b64utohex } = jsrsasign;
 
 
+
+  const PEM_BEGIN_PUBLIC = '-----BEGIN PUBLIC KEY-----\n';
+const PEM_END_PUBLIC = '\n-----END PUBLIC KEY-----';
+
+const HashMap = {
+  SHA256withRSA: 'SHA256withRSA',
+  SHA1withRSA: 'SHA1withRSA',
+};
+
+function sortParams(params: Record<string, any>): string {
+  return Object.keys(params)
+    .sort()
+    .filter(key => key !== 'sign' && typeof params[key] !== 'undefined')
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+}
+
+function formatKey(key: string): string {
+  if (!key.startsWith(PEM_BEGIN_PUBLIC)) {
+    key = PEM_BEGIN_PUBLIC + key;
+  }
+  if (!key.endsWith(PEM_END_PUBLIC)) {
+    key += PEM_END_PUBLIC;
+  }
+  return key;
+}
+
+
 @Injectable()
 export class PalmpayService {
   private readonly api_base_url: string;
@@ -110,7 +138,6 @@ export class PalmpayService {
 
 
 
-
 async handle_webhook_notification(payload: any): Promise<void> {
   const {
     appId,
@@ -150,22 +177,19 @@ async handle_webhook_notification(payload: any): Promise<void> {
     transType,
   };
 
-  const sortedParams = Object.keys(dataToSign)
-    .sort()
-    .map(key => `${key}=${dataToSign[key]}`)
-    .join('&');
-
+  const sortedParams = sortParams(dataToSign);
   console.log('Sorted Params for Signature:', sortedParams);
 
   try {
-    const decodedSign = decodeURIComponent(sign); // Important: decode before verifying
-    const publicKey = jsrsasign.KEYUTIL.getKey(this.public_key); // Make sure this is a PEM-formatted key
+    const decodedSign = decodeURIComponent(sign);
+    const formattedPublicKey = formatKey(this.public_key);
+    const publicKey = KEYUTIL.getKey(formattedPublicKey);
 
-    const signatureVerifier = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-    signatureVerifier.init(publicKey);
-    signatureVerifier.updateString(sortedParams);
+    const sig = new KJUR.crypto.Signature({ alg: HashMap.SHA256withRSA });
+    sig.init(publicKey);
+    sig.updateString(sortedParams);
 
-    const isValid = signatureVerifier.verify(decodedSign); // decodedSign is base64
+    const isValid = sig.verify(b64utohex(decodedSign));
     console.log('Signature valid:', isValid);
 
     if (!isValid) {
@@ -176,18 +200,8 @@ async handle_webhook_notification(payload: any): Promise<void> {
     throw new BadRequestException('Signature verification failed');
   }
 
-  // Step 2: Find and handle order
-  const order = await this.order_model.findOne({ orderNo });
-  if (!order) {
-    console.error('Order not found:', orderNo);
-    throw new BadRequestException('Order not found');
-  }
-
-  // TODO: Update the order or take other actions
-  console.log('Order found, processing...');
+  // Step 2: Continue with business logic after successful verification
 }
-
-
 
   async handle_webhook(payload: Record<string, any>): Promise<any> {
     const signature = payload.sign;
@@ -245,78 +259,6 @@ async handle_webhook_notification(payload: any): Promise<void> {
   }
   
 
-  
-
-  // async verify_payment(order_id: string, orderNo: string): Promise<any> {
-  //   const url = `${this.api_base_url}/api/v2/payment/merchant/order/queryStatus`;
-  
-  //   try {
-  //     console.log('Received order_id:', order_id);
-  
-  //     // Validate order ID
-  //     if (!/^[a-zA-Z0-9-]+$/.test(order_id)) {
-  //       throw new BadRequestException(`Invalid Order ID format: ${order_id}`);
-  //     }
-  
-  //     // Fetch the order from the database
-  //     const order = await this.order_model.findOne({ _id: new Types.ObjectId(order_id) }).exec();
-  //     if (!order) {
-  //       throw new BadRequestException(`Order not found for ID: ${order_id}`);
-  //     }
-  
-  //     const palmpayOrderId = (order as any).palmpayOrderId || order._id.toString();
-  
-  //     const payload = {
-  //       orderId: palmpayOrderId,
-  //       orderNo,
-  //       nonceStr: crypto.randomBytes(16).toString('hex'),
-  //       requestTime: Date.now(),
-  //       version: '2.0',
-  //     };
-  
-  //     const constructedString = Object.keys(payload)
-  //       .sort()
-  //       .map((key) => `${key}=${payload[key]}`)
-  //       .join('&');
-  
-  //     const md5Hash = md5(constructedString).toUpperCase();
-  //     const signature = this.generate_signature(md5Hash, this.private_key);
-  
-  //     const headers = {
-  //       Authorization: `Bearer ${this.app_id}`,
-  //       'Content-Type': 'application/json',
-  //       CountryCode: 'NG',
-  //       Signature: signature,
-  //     };
-  
-  //     const response = await this.http_service.axiosRef.post(url, payload, { headers });
-  //     console.log('PalmPay API Response:', response.data);
-  
-  //     if (response.data.respCode !== '00000000' || response.data.data.orderStatus !== 0) {
-  //       throw new BadRequestException(response.data.message || 'Payment verification failed');
-  //     }
-
-  //     if (order.payment_status !== 'Paid') {
-  //       order.payment_status = 'Paid';
-  
-  //       if (order.order_status === null) {
-  //         order.order_status = 'Pending Approval';
-  //       }
-  
-  //       await order.save(); // ✅ Persist changes
-  //     }
-  
-  //     return response.data.data;
-  //   } catch (error) {
-  //     console.error('Error during payment verification:', error.response?.data || error.message);
-  //     throw new BadRequestException(
-  //       error.response?.data?.message || 'Payment verification failed',
-  //     );
-  //   }
-  // }
-  
-  
-  
 
   private generate_signature(data: string, privateKey: string): string {
     try {
@@ -347,6 +289,8 @@ async handle_webhook_notification(payload: any): Promise<void> {
       return false;
     }
   }
+
+
 }
 
 
