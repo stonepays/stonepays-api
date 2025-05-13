@@ -62,23 +62,23 @@ export class PalmpayController {
     }
   }
 
-  /**
-   * Handles webhook notifications from PalmPay
-   */
-  @Post('notify')
-  @ApiOperation({ summary: 'Webhook Notification Handler' })
-  async handleNotification(@Body() body: any, @Res() res: Response) {
-    try {
-      await this.palmPayService.handle_webhook_notification(body);
+ /**
+ * Handles webhook notifications from PalmPay
+ */
+@Post('notify')
+@ApiOperation({ summary: 'Webhook Notification Handler' })
+async handleNotification(@Body() body: any, @Res() res: Response) {
+  try {
+    await this.palmPayService.handle_webhook_notification(body);
 
-      // Always respond with 200 OK so PalmPay doesn't retry
-      return res.status(HttpStatus.OK).json({ message: 'Received successfully' });
-    } catch (error) {
-      console.error('Webhook Error:', error.message);
-      // Still respond with 200 OK to stop PalmPay retries
-      return res.status(HttpStatus.OK).json({ message: 'Error handled gracefully' });
-    }
+    // Always respond with 200 OK so PalmPay doesn't retry
+    return res.status(HttpStatus.OK).json({ message: 'Received successfully' });
+  } catch (error) {
+    console.error('Webhook Error:', error.message);
+    // Still respond with 200 OK to stop PalmPay retries
+    return res.status(HttpStatus.OK).json({ message: 'Error handled gracefully' });
   }
+}
 
   /**
    * (Optional) Verifies a payment request with PalmPay

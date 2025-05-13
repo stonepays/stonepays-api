@@ -9,6 +9,7 @@ import { Order, OrderDocument } from 'src/schema/order.schema';
 import { User, UserDocument } from 'src/schema/user.schema';
 import * as nodemailer from 'nodemailer';
 import jsrsasign from 'jsrsasign';
+const { KEYUTIL, KJUR, hextob64, b64utohex } = jsrsasign;
 
 @Injectable()
 export class PalmpayService {
@@ -107,79 +108,107 @@ export class PalmpayService {
 
 
 
-  async handle_webhook_notification(payload: any): Promise<void> {
-    const {
-      appId,
-      orderId,
-      orderNo,
-      transType,
-      orderType,
-      amount,
-      couponAmount,
-      status,
-      completeTime,
-      payerMobileNo,
-      orderStatus,
-      payer,
-      sign,
-    } = payload;
+ async handle_webhook_notification(payload: any): Promise<void> {
+  const {
+    appId,
+    orderId,
+    orderNo,
+    transType,
+    orderType,
+    amount,
+    couponAmount,
+    status,
+    completeTime,
+    payerMobileNo,
+    orderStatus,
+    payer,
+    sign,
+  } = payload;
 
-    if (appId !== this.app_id) {
-      throw new BadRequestException('Invalid appId');
-    }
+  console.log('Received webhook payload:', payload);
 
-    // Step 1: Verify Signature
-    const dataToSign = {
-      appId,
-      orderId,
-      orderNo,
-      transType,
-      orderType,
-      amount,
-      couponAmount,
-      status,
-      completeTime,
-      payerMobileNo,
-      orderStatus,
-      payer,
-    };
+  if (appId !== this.app_id) {
+    throw new BadRequestException('Invalid appId');
+  }
 
-    const sortedParams = Object.keys(dataToSign)
-      .sort()
-      .map(key => `${key}=${dataToSign[key]}`)
-      .join('&');
+  // Step 1: Verify Signature
+  const dataToSign: Record<string, any> = {
+    amount,
+    appId,
+    completeTime,
+    couponAmount,
+    orderId,
+    orderNo,
+    orderStatus,
+    orderType,
+    payer,
+    payerMobileNo,
+    status,
+    transType,
+  };
 
-    const publicKey = jsrsasign.KEYUTIL.getKey(this.public_key);
-    const sig = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-    sig.init(publicKey);
-    sig.updateString(sortedParams);
-    const isValid = sig.verify(jsrsasign.hextob64(jsrsasign.b64utohex(sign)));
+  const sortedParams = Object.keys(dataToSign)
+    .sort()
+    .map(key => `${key}=${dataToSign[key]}`)
+    .join('&');
+
+  console.log('Sorted Params for Signature:', sortedParams);
+
+  try {
+    const publicKey = KEYUTIL.getKey(this.public_key);
+    const signatureVerifier = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+    signatureVerifier.init(publicKey);
+    signatureVerifier.updateString(sortedParams);
+
+    const decodedSign = hextob64(b64utohex(sign));
+    const isValid = signatureVerifier.verify(decodedSign);
+
+    console.log('Signature valid:', isValid);
 
     if (!isValid) {
       throw new BadRequestException('Invalid signature');
     }
+  } catch (err) {
+    console.error('Signature verification error:', err);
+    throw new BadRequestException('Signature verification failed');
+  }
 
-    // Step 2: Find Order
-    const order = await this.order_model.findOne({ orderNo });
-    if (!order) throw new BadRequestException('Order not found');
+  // Step 2: Find Order
+  const order = await this.order_model.findOne({ orderNo });
+  if (!order) {
+    console.error('Order not found:', orderNo);
+    throw new BadRequestException('Order not found');
+  }
 
-    // Step 3: Update Order Status (customize this part)
+  // Step 3: Update Order if not already paid
+  if (order.payment_status !== 'Paid') {
     order.order_status = 'success';
+    order.payment_status = 'Paid';
     order.transaction_reference = orderId;
     order.payment_date = new Date(Number(completeTime));
     await order.save();
+    console.log('Order updated successfully');
+  } else {
+    console.log('Order already marked as paid');
+  }
 
-    // Step 4: Find User and Send Email
-    const user = await this.user_model.findById(order.user_details.user_id);
-    if (user?.email) {
+  // Step 4: Send Email Notification
+  const user = await this.user_model.findById(order.user_details.user_id);
+  if (user?.email) {
+    try {
       await this.transporter.sendMail({
         from: '"PalmPay Payments" <no-reply@yourapp.com>',
         to: user.email,
         subject: 'Payment Received',
-        text: `Dear ${user.first_name || 'User'}, your payment of ₦${amount / 100} was received successfully via PalmPay.`,
+        text: `Dear ${user.first_name || 'User'}, your payment of ₦${(amount / 100).toFixed(2)} was received successfully via PalmPay.`,
       });
+      console.log('Payment email sent to:', user.email);
+    } catch (emailErr) {
+      console.error('Failed to send payment confirmation email:', emailErr);
     }
   }
+}
+
 
 
   async handle_webhook(payload: Record<string, any>): Promise<any> {
