@@ -156,103 +156,91 @@ export class PalmpayService {
     }
   }
 
-  /**
-   * Handle webhook (called from controller)
-   */
-  async handleWebhook(payload: Record<string, any>) {
-    const palmPayPublicKey = process.env.PALMPAY_PUBLIC_KEY;
+  async handleWebhook(payload: any): Promise<void> {
+  const {
+    appId,
+    orderId,
+    orderNo,
+    transType,
+    orderType,
+    amount,
+    couponAmount,
+    status,
+    completeTime,
+    payerMobileNo,
+    orderStatus,
+    payer,
+    sign,
+  } = payload;
 
-    if (!this.verifyWebhookSignature(payload, palmPayPublicKey)) {
-      throw new BadRequestException('Invalid signature from PalmPay webhook.');
-    }
+  console.log('Received webhook payload:', payload);
 
-    const { orderId, status, orderStatus, amount, completeTime, orderNo } = payload;
-
-    console.log('✅ Valid webhook received for order:', orderId);
-
-    // Update order/payment record logic here
-    const order = await this.order_model.findById(orderId);
-    if (!order) {
-      throw new BadRequestException('Order not found.');
-    }
-
-    if (status === 1 && orderStatus === 2) {
-      order.order_status = 'completed'; 
-      order.payment_status = 'paid'; 
-      order.total_price = amount;
-      order.payment_date = completeTime;
-      order.transaction_reference = orderNo;
-      order.payment_reference = orderNo;
-      await order.save();
-
-      // Optional: trigger notifications or user wallet update, etc.
-    }
+  // Verify appId matches the configured appId
+  if (appId !== this.app_id) {
+    throw new BadRequestException('Invalid appId');
   }
 
+  // Step 1: Verify Signature
+  const dataToSign: Record<string, any> = {
+    amount,
+    appId,
+    completeTime,
+    couponAmount,
+    orderId,
+    orderNo,
+    orderStatus,
+    orderType,
+    payer,
+    payerMobileNo,
+    status,
+    transType,
+  };
 
+  const sortedParams = this.sortParams(dataToSign);
+  console.log('Sorted Params for Signature:', sortedParams);
 
-// async handlePaymentCallback(payload: any, signature: string): Promise<void> {
-//   const { orderId, orderStatus, status } = payload;
+  try {
+    // Decode the signature and format the public key for verification
+    const decodedSign = decodeURIComponent(sign);
+    const formattedPublicKey = this.formatKey(this.public_key);
+    const publicKey = KEYUTIL.getKey(formattedPublicKey);
 
-//   // Optional: You can verify the sign if PalmPay provided a public key
-//   const isValid = this.verifyPalmPaySignature(payload);
-//   if (!isValid) throw new BadRequestException('Invalid signature');
+    const sig = new KJUR.crypto.Signature({ alg: HashMap.SHA256withRSA });
+    sig.init(publicKey);
+    sig.updateString(sortedParams);
 
-//   if (!orderId) throw new BadRequestException('Order ID missing in webhook.');
+    // Verify the signature
+    const isValid = sig.verify(b64utohex(decodedSign));
+    console.log('Signature valid:', isValid);
 
-//   const order = await this.order_model.findById(orderId);
-//   if (!order) throw new BadRequestException('Order not found.');
+    if (!isValid) {
+      throw new BadRequestException('Invalid signature');
+    }
+  } catch (err) {
+    console.error('Signature verification error:', err);
+    throw new BadRequestException('Signature verification failed');
+  }
 
-//   // Check if payment was successful
-//   const isPaid = status === 1 && orderStatus === 2;
+  // Step 2: Continue with business logic after successful signature verification
+  const order = await this.order_model.findById(orderId).exec();
+  if (!order) {
+    throw new BadRequestException('Order not found');
+  }
 
-//   if (isPaid) {
-//     order.order_status = 'completed'; // or whatever status you use
-//     order.payment_status = 'paid'; // or whatever status you use
-//     order.payment_date = payload.completeTime || new Date();
-//     order.transaction_reference = payload.referenceNo || payload.tradeNo;
-//     order.payment_reference = payload.referenceNo || payload.tradeNo;
-//     await order.save();
-//   } else {
-//     throw new BadRequestException('Payment not successful.');
-//   }
-// }
+  // Step 3: Handle order update based on webhook status
+  if (status === 1 && orderStatus === 2) {
+    order.order_status = 'completed'; 
+    order.payment_status = 'paid'; 
+    order.total_price = amount;
+    order.payment_date = completeTime;
+    order.transaction_reference = orderNo;
+    order.payment_reference = orderNo;
+    await order.save();
 
-
-// verifyPalmPaySignature(payload: any): boolean {
-//   try {
-//     if (!payload || typeof payload !== 'object') {
-//       console.error('Invalid payload received for signature verification');
-//       return false;
-//     }
-
-//     const { sign, signType = 'SHA256withRSA' } = payload;
-
-//     if (!sign || typeof sign !== 'string') {
-//       console.error('Missing or invalid "sign" field in payload');
-//       return false;
-//     }
-
-//     const sortedString = sortParams(payload);
-//     const formattedPublicKey = formatKey(this.public_key);
-
-//     const publicKey = KEYUTIL.getKey(formattedPublicKey);
-//     const sig = new KJUR.crypto.Signature({ alg: signType });
-//     sig.init(publicKey);
-
-//     sig.updateString(sortedString);
-//     const isValid = sig.verify(b64utohex(sign));
-
-//     if (!isValid) {
-//       console.warn('PalmPay signature verification failed');
-//     }
-
-//     return isValid;
-//   } catch (err) {
-//     console.error('Error during PalmPay signature verification:', err.message);
-//     return false;
-//   }
-// }
+    // Optional: Send notification or trigger further actions, such as user wallet update
+    console.log('Order successfully updated.');
+  }
+}
 
 
   private formatKey(key: string): string {
