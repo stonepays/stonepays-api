@@ -221,11 +221,12 @@ export class PalmpayService {
   }
 
   // Step 4: Parse `payer` string to JSON for further use
-  let parsedPayer: any = null;
+  let parsedPayer: Record<string, any> = {};
   try {
-    parsedPayer = typeof payer === 'string' ? JSON.parse(payer) : payer;
-  } catch (err) {
-    console.error('Failed to parse payer:', err);
+    parsedPayer = JSON.parse(payer);
+    console.log('Parsed payer:', parsedPayer);
+  } catch (parseError) {
+    console.error('Failed to parse payer field:', parseError);
     throw new BadRequestException('Invalid payer format');
   }
 
