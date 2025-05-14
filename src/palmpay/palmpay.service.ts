@@ -180,60 +180,60 @@ export class PalmpayService {
     throw new BadRequestException('Invalid appId');
   }
 
-  // Step 2: Construct data to verify (treat `payer` as JSON string)
-  const dataToSign: Record<string, any> = {
-    amount,
-    appId,
-    completeTime,
-    couponAmount,
-    orderId,
-    orderNo,
-    orderStatus,
-    orderType,
-    payer, // Must be string during verification
-    payerMobileNo,
-    status,
-    transType,
-  };
+  // // Step 2: Construct data to verify (treat `payer` as JSON string)
+  // const dataToSign: Record<string, any> = {
+  //   amount,
+  //   appId,
+  //   completeTime,
+  //   couponAmount,
+  //   orderId,
+  //   orderNo,
+  //   orderStatus,
+  //   orderType,
+  //   payer, // Must be string during verification
+  //   payerMobileNo,
+  //   status,
+  //   transType,
+  // };
 
-  // Step 3: Verify Signature
-  try {
-    const sortedParams = this.sortParams(dataToSign);
-    console.log('Sorted Params for Signature:', sortedParams);
+  // // Step 3: Verify Signature
+  // try {
+  //   const sortedParams = this.sortParams(dataToSign);
+  //   console.log('Sorted Params for Signature:', sortedParams);
 
-    const decodedSign = decodeURIComponent(sign);
-    const formattedPublicKey = this.formatKey(this.public_key);
-    const publicKey = KEYUTIL.getKey(formattedPublicKey);
+  //   const decodedSign = decodeURIComponent(sign);
+  //   const formattedPublicKey = this.formatKey(this.public_key);
+  //   const publicKey = KEYUTIL.getKey(formattedPublicKey);
 
-    const sig = new KJUR.crypto.Signature({ alg: HashMap.SHA256withRSA });
-    sig.init(publicKey);
-    sig.updateString(sortedParams);
+  //   const sig = new KJUR.crypto.Signature({ alg: HashMap.SHA256withRSA });
+  //   sig.init(publicKey);
+  //   sig.updateString(sortedParams);
 
-    const isValid = sig.verify(b64utohex(decodedSign));
-    console.log('Signature valid:', isValid);
+  //   const isValid = sig.verify(b64utohex(decodedSign));
+  //   console.log('Signature valid:', isValid);
 
-    if (!isValid) {
-      throw new BadRequestException('Invalid signature');
-    }
-  } catch (err) {
-    console.error('Signature verification error:', err);
-    throw new BadRequestException('Signature verification failed');
-  }
+  //   if (!isValid) {
+  //     throw new BadRequestException('Invalid signature');
+  //   }
+  // } catch (err) {
+  //   console.error('Signature verification error:', err);
+  //   throw new BadRequestException('Signature verification failed');
+  // }
 
-  // Step 4: Parse `payer` string to JSON for further use
-  let parsedPayer: Record<string, any> = {};
-  try {
-    parsedPayer = JSON.parse(payer);
-    console.log('Parsed payer:', parsedPayer);
-  } catch (parseError) {
-    console.error('Failed to parse payer field:', parseError);
-    throw new BadRequestException('Invalid payer format');
-  }
+  // // Step 4: Parse `payer` string to JSON for further use
+  // let parsedPayer: Record<string, any> = {};
+  // try {
+  //   parsedPayer = JSON.parse(payer);
+  //   console.log('Parsed payer:', parsedPayer);
+  // } catch (parseError) {
+  //   console.error('Failed to parse payer field:', parseError);
+  //   throw new BadRequestException('Invalid payer format');
+  // }
 
-  // Step 5: Continue with business logic using `parsedPayer`
-  // Example: Find and update the order, log payment, notify user, etc.
-  console.log('Payer Info:', parsedPayer);
-  console.log('Order ID:', orderId);
+  // // Step 5: Continue with business logic using `parsedPayer`
+  // // Example: Find and update the order, log payment, notify user, etc.
+  // console.log('Payer Info:', parsedPayer);
+  // console.log('Order ID:', orderId);
   
   // Step 2: Continue with business logic after successful signature verification
   const order = await this.order_model.findById(orderId).exec();
