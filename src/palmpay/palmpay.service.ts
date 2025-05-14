@@ -142,7 +142,7 @@ async handlePaymentCallback(payload: any, signature: string): Promise<void> {
   const { orderId, orderStatus, status } = payload;
 
   // Optional: You can verify the sign if PalmPay provided a public key
-  const isValid = this.verifyWebhookSignature(payload, signature);
+  const isValid = this.verifyPalmPaySignature(payload);
   if (!isValid) throw new BadRequestException('Invalid signature');
 
   if (!orderId) throw new BadRequestException('Order ID missing in webhook.');
@@ -166,35 +166,41 @@ async handlePaymentCallback(payload: any, signature: string): Promise<void> {
 }
 
 
-// verifyPalmPaySignature(payload: any): boolean {
-//   const sign = decodeURIComponent(payload.sign);
-//   const sortedParams = sortParams(payload); // use your helper from earlier
-//   const publicKey = formatKey(this.public_key); // add this to your config
+verifyPalmPaySignature(payload: any): boolean {
+  try {
+    if (!payload || typeof payload !== 'object') {
+      console.error('Invalid payload received for signature verification');
+      return false;
+    }
 
-//   const sig = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-//   sig.init(publicKey);
-//   sig.updateString(sortedParams);
-//   return sig.verify(sign);
-// }
+    const { sign, signType = 'SHA256withRSA' } = payload;
 
+    if (!sign || typeof sign !== 'string') {
+      console.error('Missing or invalid "sign" field in payload');
+      return false;
+    }
 
-verifyWebhookSignature(payload: any, signature: string): boolean {
-  // Example logic — adjust according to PalmPay's docs
-  const sorted = sortParams(payload);
-  const publicKey = formatKey(this.public_key);
+    const sortedString = sortParams(payload);
+    const formattedPublicKey = formatKey(this.public_key);
 
-  const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-  sig.init(publicKey);
-  sig.updateString(sorted);
+    const publicKey = KEYUTIL.getKey(formattedPublicKey);
+    const sig = new KJUR.crypto.Signature({ alg: signType });
+    sig.init(publicKey);
 
-  return sig.verify(b64utohex(signature));
+    sig.updateString(sortedString);
+    const isValid = sig.verify(b64utohex(sign));
+
+    if (!isValid) {
+      console.warn('PalmPay signature verification failed');
+    }
+
+    return isValid;
+  } catch (err) {
+    console.error('Error during PalmPay signature verification:', err.message);
+    return false;
+  }
 }
 
-
-
-
-
-  
 
   private formatKey(key: string): string {
     const PEM_BEGIN = '-----BEGIN PUBLIC KEY-----\n';
