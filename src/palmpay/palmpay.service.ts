@@ -13,7 +13,7 @@ const { KEYUTIL, KJUR, hextob64, b64utohex } = jsrsasign;
 
 
 
-  const PEM_BEGIN_PUBLIC = '-----BEGIN PUBLIC KEY-----\n';
+ const PEM_BEGIN_PUBLIC = '-----BEGIN PUBLIC KEY-----\n';
 const PEM_END_PUBLIC = '\n-----END PUBLIC KEY-----';
 
 const HashMap = {
@@ -136,6 +136,59 @@ export class PalmpayService {
   }
 
 
+  verifyWebhookSignature(payload: Record<string, any>, publicKey: string): boolean {
+    try {
+      const receivedSign = decodeURIComponent(payload.sign);
+      const sortedParams = this.sortParams(payload);
+      const formattedKey = this.formatKey(publicKey);
+
+      const sig = new KJUR.crypto.Signature({ alg: HashMap.SHA256withRSA });
+      sig.init(formattedKey);
+      sig.updateString(sortedParams);
+
+      const isValid = sig.verify(b64utohex(receivedSign));
+      console.log('Signature valid:', isValid);
+
+      return isValid;
+    } catch (err) {
+      console.error('Webhook Signature Verification Error:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Handle webhook (called from controller)
+   */
+  async handleWebhook(payload: Record<string, any>) {
+    const palmPayPublicKey = process.env.PALMPAY_PUBLIC_KEY;
+
+    if (!this.verifyWebhookSignature(payload, palmPayPublicKey)) {
+      throw new BadRequestException('Invalid signature from PalmPay webhook.');
+    }
+
+    const { orderId, status, orderStatus, amount, completeTime, orderNo } = payload;
+
+    console.log('✅ Valid webhook received for order:', orderId);
+
+    // Update order/payment record logic here
+    const order = await this.order_model.findById(orderId);
+    if (!order) {
+      throw new BadRequestException('Order not found.');
+    }
+
+    if (status === 1 && orderStatus === 2) {
+      order.order_status = 'completed'; 
+      order.payment_status = 'paid'; 
+      order.total_price = amount;
+      order.payment_date = completeTime;
+      order.transaction_reference = orderNo;
+      order.payment_reference = orderNo;
+      await order.save();
+
+      // Optional: trigger notifications or user wallet update, etc.
+    }
+  }
+
 
 
 async handlePaymentCallback(payload: any, signature: string): Promise<void> {
@@ -245,6 +298,14 @@ verifyPalmPaySignature(payload: any): boolean {
       return false;
     }
   }
+
+  public sortParams(params: Record<string, any>): string {
+  return Object.keys(params)
+    .sort()
+    .filter(key => key !== 'sign' && typeof params[key] !== 'undefined')
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+}
 
 
 }
