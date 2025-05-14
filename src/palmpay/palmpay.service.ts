@@ -191,68 +191,68 @@ export class PalmpayService {
 
 
 
-async handlePaymentCallback(payload: any, signature: string): Promise<void> {
-  const { orderId, orderStatus, status } = payload;
+// async handlePaymentCallback(payload: any, signature: string): Promise<void> {
+//   const { orderId, orderStatus, status } = payload;
 
-  // Optional: You can verify the sign if PalmPay provided a public key
-  const isValid = this.verifyPalmPaySignature(payload);
-  if (!isValid) throw new BadRequestException('Invalid signature');
+//   // Optional: You can verify the sign if PalmPay provided a public key
+//   const isValid = this.verifyPalmPaySignature(payload);
+//   if (!isValid) throw new BadRequestException('Invalid signature');
 
-  if (!orderId) throw new BadRequestException('Order ID missing in webhook.');
+//   if (!orderId) throw new BadRequestException('Order ID missing in webhook.');
 
-  const order = await this.order_model.findById(orderId);
-  if (!order) throw new BadRequestException('Order not found.');
+//   const order = await this.order_model.findById(orderId);
+//   if (!order) throw new BadRequestException('Order not found.');
 
-  // Check if payment was successful
-  const isPaid = status === 1 && orderStatus === 2;
+//   // Check if payment was successful
+//   const isPaid = status === 1 && orderStatus === 2;
 
-  if (isPaid) {
-    order.order_status = 'completed'; // or whatever status you use
-    order.payment_status = 'paid'; // or whatever status you use
-    order.payment_date = payload.completeTime || new Date();
-    order.transaction_reference = payload.referenceNo || payload.tradeNo;
-    order.payment_reference = payload.referenceNo || payload.tradeNo;
-    await order.save();
-  } else {
-    throw new BadRequestException('Payment not successful.');
-  }
-}
+//   if (isPaid) {
+//     order.order_status = 'completed'; // or whatever status you use
+//     order.payment_status = 'paid'; // or whatever status you use
+//     order.payment_date = payload.completeTime || new Date();
+//     order.transaction_reference = payload.referenceNo || payload.tradeNo;
+//     order.payment_reference = payload.referenceNo || payload.tradeNo;
+//     await order.save();
+//   } else {
+//     throw new BadRequestException('Payment not successful.');
+//   }
+// }
 
 
-verifyPalmPaySignature(payload: any): boolean {
-  try {
-    if (!payload || typeof payload !== 'object') {
-      console.error('Invalid payload received for signature verification');
-      return false;
-    }
+// verifyPalmPaySignature(payload: any): boolean {
+//   try {
+//     if (!payload || typeof payload !== 'object') {
+//       console.error('Invalid payload received for signature verification');
+//       return false;
+//     }
 
-    const { sign, signType = 'SHA256withRSA' } = payload;
+//     const { sign, signType = 'SHA256withRSA' } = payload;
 
-    if (!sign || typeof sign !== 'string') {
-      console.error('Missing or invalid "sign" field in payload');
-      return false;
-    }
+//     if (!sign || typeof sign !== 'string') {
+//       console.error('Missing or invalid "sign" field in payload');
+//       return false;
+//     }
 
-    const sortedString = sortParams(payload);
-    const formattedPublicKey = formatKey(this.public_key);
+//     const sortedString = sortParams(payload);
+//     const formattedPublicKey = formatKey(this.public_key);
 
-    const publicKey = KEYUTIL.getKey(formattedPublicKey);
-    const sig = new KJUR.crypto.Signature({ alg: signType });
-    sig.init(publicKey);
+//     const publicKey = KEYUTIL.getKey(formattedPublicKey);
+//     const sig = new KJUR.crypto.Signature({ alg: signType });
+//     sig.init(publicKey);
 
-    sig.updateString(sortedString);
-    const isValid = sig.verify(b64utohex(sign));
+//     sig.updateString(sortedString);
+//     const isValid = sig.verify(b64utohex(sign));
 
-    if (!isValid) {
-      console.warn('PalmPay signature verification failed');
-    }
+//     if (!isValid) {
+//       console.warn('PalmPay signature verification failed');
+//     }
 
-    return isValid;
-  } catch (err) {
-    console.error('Error during PalmPay signature verification:', err.message);
-    return false;
-  }
-}
+//     return isValid;
+//   } catch (err) {
+//     console.error('Error during PalmPay signature verification:', err.message);
+//     return false;
+//   }
+// }
 
 
   private formatKey(key: string): string {

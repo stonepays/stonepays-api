@@ -69,9 +69,9 @@ export class PalmpayController {
 
   @Post('payment_callback')
   @HttpCode(200)
-  async handlePalmPayCallback(@Body() payload: any, signature: string, @Res() res: Response) {
+  async handlePalmPayCallback(@Body() payload: any, @Res() res: Response) {
     try {
-      await this.palmPayService.handlePaymentCallback(payload, signature);
+      await this.palmPayService.handleWebhook(payload);
       return res.send('success'); // PalmPay expects this exact string
     } catch (error) {
       console.error('PalmPay webhook error:', error.message);
