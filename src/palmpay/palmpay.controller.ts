@@ -12,6 +12,7 @@ import {
 import { Response } from 'express';
 import { PalmpayService } from './palmpay.service';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { sign } from 'crypto';
 
 @ApiTags('Palmpay-Payments')
 @Controller('palmpay')
@@ -68,9 +69,9 @@ export class PalmpayController {
 
   @Post('payment_callback')
   @HttpCode(200)
-  async handlePalmPayCallback(@Body() payload: any, @Res() res: Response) {
+  async handlePalmPayCallback(@Body() payload: any, signature: string, @Res() res: Response) {
     try {
-      await this.palmPayService.handlePaymentCallback(payload);
+      await this.palmPayService.handlePaymentCallback(payload, signature);
       return res.send('success'); // PalmPay expects this exact string
     } catch (error) {
       console.error('PalmPay webhook error:', error.message);

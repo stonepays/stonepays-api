@@ -138,11 +138,11 @@ export class PalmpayService {
 
 
 
-async handlePaymentCallback(payload: any): Promise<void> {
+async handlePaymentCallback(payload: any, signature: string): Promise<void> {
   const { orderId, orderStatus, status } = payload;
 
   // Optional: You can verify the sign if PalmPay provided a public key
-  const isValid = this.verifyPalmPaySignature(payload);
+  const isValid = this.verifyWebhookSignature(payload, signature);
   if (!isValid) throw new BadRequestException('Invalid signature');
 
   if (!orderId) throw new BadRequestException('Order ID missing in webhook.');
@@ -166,16 +166,30 @@ async handlePaymentCallback(payload: any): Promise<void> {
 }
 
 
-verifyPalmPaySignature(payload: any): boolean {
-  const sign = decodeURIComponent(payload.sign);
-  const sortedParams = sortParams(payload); // use your helper from earlier
-  const publicKey = formatKey(this.public_key); // add this to your config
+// verifyPalmPaySignature(payload: any): boolean {
+//   const sign = decodeURIComponent(payload.sign);
+//   const sortedParams = sortParams(payload); // use your helper from earlier
+//   const publicKey = formatKey(this.public_key); // add this to your config
 
-  const sig = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+//   const sig = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+//   sig.init(publicKey);
+//   sig.updateString(sortedParams);
+//   return sig.verify(sign);
+// }
+
+
+verifyWebhookSignature(payload: any, signature: string): boolean {
+  // Example logic — adjust according to PalmPay's docs
+  const sorted = sortParams(payload);
+  const publicKey = formatKey(this.public_key);
+
+  const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
   sig.init(publicKey);
-  sig.updateString(sortedParams);
-  return sig.verify(sign);
+  sig.updateString(sorted);
+
+  return sig.verify(b64utohex(signature));
 }
+
 
 
 
