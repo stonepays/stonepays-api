@@ -21,23 +21,23 @@ const HashMap = {
   SHA1withRSA: 'SHA1withRSA',
 };
 
-function sortParams(params: Record<string, any>): string {
-  return Object.keys(params)
-    .sort()
-    .filter(key => key !== 'sign' && typeof params[key] !== 'undefined')
-    .map(key => `${key}=${params[key]}`)
-    .join('&');
-}
+// function sortParams(params: Record<string, any>): string {
+//   return Object.keys(params)
+//     .sort()
+//     .filter(key => key !== 'sign' && typeof params[key] !== 'undefined')
+//     .map(key => `${key}=${params[key]}`)
+//     .join('&');
+// }
 
-function formatKey(key: string): string {
-  if (!key.startsWith(PEM_BEGIN_PUBLIC)) {
-    key = PEM_BEGIN_PUBLIC + key;
-  }
-  if (!key.endsWith(PEM_END_PUBLIC)) {
-    key += PEM_END_PUBLIC;
-  }
-  return key;
-}
+// function formatKey(key: string): string {
+//   if (!key.startsWith(PEM_BEGIN_PUBLIC)) {
+//     key = PEM_BEGIN_PUBLIC + key;
+//   }
+//   if (!key.endsWith(PEM_END_PUBLIC)) {
+//     key += PEM_END_PUBLIC;
+//   }
+//   return key;
+// }
 
 
 @Injectable()
@@ -175,12 +175,12 @@ export class PalmpayService {
 
   console.log('Received webhook payload:', payload);
 
-  // Verify appId matches the configured appId
+  // Step 1: Verify appId
   if (appId !== this.app_id) {
     throw new BadRequestException('Invalid appId');
   }
 
-  // Step 1: Verify Signature
+  // Step 2: Construct data to verify (treat `payer` as JSON string)
   const dataToSign: Record<string, any> = {
     amount,
     appId,
@@ -190,17 +190,17 @@ export class PalmpayService {
     orderNo,
     orderStatus,
     orderType,
-    payer,
+    payer, // Must be string during verification
     payerMobileNo,
     status,
     transType,
   };
 
-  const sortedParams = this.sortParams(dataToSign);
-  console.log('Sorted Params for Signature:', sortedParams);
-
+  // Step 3: Verify Signature
   try {
-    // Decode the signature and format the public key for verification
+    const sortedParams = this.sortParams(dataToSign);
+    console.log('Sorted Params for Signature:', sortedParams);
+
     const decodedSign = decodeURIComponent(sign);
     const formattedPublicKey = this.formatKey(this.public_key);
     const publicKey = KEYUTIL.getKey(formattedPublicKey);
@@ -209,7 +209,6 @@ export class PalmpayService {
     sig.init(publicKey);
     sig.updateString(sortedParams);
 
-    // Verify the signature
     const isValid = sig.verify(b64utohex(decodedSign));
     console.log('Signature valid:', isValid);
 
@@ -221,6 +220,20 @@ export class PalmpayService {
     throw new BadRequestException('Signature verification failed');
   }
 
+  // Step 4: Parse `payer` string to JSON for further use
+  let parsedPayer: any = null;
+  try {
+    parsedPayer = typeof payer === 'string' ? JSON.parse(payer) : payer;
+  } catch (err) {
+    console.error('Failed to parse payer:', err);
+    throw new BadRequestException('Invalid payer format');
+  }
+
+  // Step 5: Continue with business logic using `parsedPayer`
+  // Example: Find and update the order, log payment, notify user, etc.
+  console.log('Payer Info:', parsedPayer);
+  console.log('Order ID:', orderId);
+  
   // Step 2: Continue with business logic after successful signature verification
   const order = await this.order_model.findById(orderId).exec();
   if (!order) {
@@ -241,6 +254,9 @@ export class PalmpayService {
     console.log('Order successfully updated.');
   }
 }
+
+
+
 
 
   private formatKey(key: string): string {
@@ -277,23 +293,30 @@ export class PalmpayService {
   }
 
 
-  public verify_signature(data: string, receivedSign: string): boolean {
-    try {
-      const generatedSign = this.generate_signature(data, this.private_key);
-      return generatedSign === receivedSign;
-    } catch (err) {
-      console.error('Error verifying signature:', err.message);
-      return false;
-    }
-  }
+  // public verify_signature(data: string, receivedSign: string): boolean {
+  //   try {
+  //     const generatedSign = this.generate_signature(data, this.private_key);
+  //     return generatedSign === receivedSign;
+  //   } catch (err) {
+  //     console.error('Error verifying signature:', err.message);
+  //     return false;
+  //   }
+  // }
 
   public sortParams(params: Record<string, any>): string {
   return Object.keys(params)
     .sort()
     .filter(key => key !== 'sign' && typeof params[key] !== 'undefined')
-    .map(key => `${key}=${params[key]}`)
+    .map(key => {
+      const value =
+        key === 'payer' && typeof params[key] === 'object'
+          ? JSON.stringify(params[key])
+          : params[key];
+      return `${key}=${value}`;
+    })
     .join('&');
 }
+
 
 
 }
