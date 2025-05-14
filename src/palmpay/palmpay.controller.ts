@@ -64,44 +64,19 @@ export class PalmpayController {
     }
   }
 
- /**
- * Handles webhook notifications from PalmPay
- */
-// @Post('notify')
-// @ApiOperation({ summary: 'Webhook Notification Handler' })
-// async handleNotification(@Body() body: any, @Res() res: Response) {
-//   try {
-//     await this.palmPayService.handle_webhook_notification(body);
-
-//     // Always respond with 200 OK so PalmPay doesn't retry
-//     return res.status(HttpStatus.OK).json({ message: 'Received successfully' });
-//   } catch (error) {
-//     console.error('Webhook Error:', error.message);
-//     // Still respond with 200 OK to stop PalmPay retries
-//     return res.status(HttpStatus.OK).json({ message: 'Error handled gracefully' });
-//   }
-// }
 
 
-@Post('webhook')
-  @HttpCode(HttpStatus.OK)
-  async handleWebhook(
-    @Body() payload: any,
-    @Headers('x-signature') signature: string,
-  ) {
-    // Optional: You can verify signature if PalmPay provides that
-    const isValid = await this.palmPayService.verifyWebhookSignature(payload, signature);
-    if (!isValid) {
-      console.log('Invalid webhook signature.');
-      return { status: 'ignored' };
+  @Post('payment_callback')
+  @HttpCode(200)
+  async handlePalmPayCallback(@Body() payload: any, @Res() res: Response) {
+    try {
+      await this.palmPayService.handlePaymentCallback(payload);
+      return res.send('success'); // PalmPay expects this exact string
+    } catch (error) {
+      console.error('PalmPay webhook error:', error.message);
+      return res.status(400).send('failure'); // You can customize this as needed
     }
-
-    console.log('Received PalmPay webhook:', payload);
-
-    if (payload.status === 'SUCCESS' && payload.orderNo) {
-      await this.palmPayService.handleSuccessfulPayment(payload);
-    }
-
-    return { status: 'received' };
   }
+
+  
 }
