@@ -4,6 +4,8 @@ import {
   Body,
   HttpException,
   HttpStatus,
+  HttpCode,
+  Headers,
   BadRequestException,
   Res,
 } from '@nestjs/common';
@@ -65,38 +67,41 @@ export class PalmpayController {
  /**
  * Handles webhook notifications from PalmPay
  */
-@Post('notify')
-@ApiOperation({ summary: 'Webhook Notification Handler' })
-async handleNotification(@Body() body: any, @Res() res: Response) {
-  try {
-    await this.palmPayService.handle_webhook_notification(body);
+// @Post('notify')
+// @ApiOperation({ summary: 'Webhook Notification Handler' })
+// async handleNotification(@Body() body: any, @Res() res: Response) {
+//   try {
+//     await this.palmPayService.handle_webhook_notification(body);
 
-    // Always respond with 200 OK so PalmPay doesn't retry
-    return res.status(HttpStatus.OK).json({ message: 'Received successfully' });
-  } catch (error) {
-    console.error('Webhook Error:', error.message);
-    // Still respond with 200 OK to stop PalmPay retries
-    return res.status(HttpStatus.OK).json({ message: 'Error handled gracefully' });
+//     // Always respond with 200 OK so PalmPay doesn't retry
+//     return res.status(HttpStatus.OK).json({ message: 'Received successfully' });
+//   } catch (error) {
+//     console.error('Webhook Error:', error.message);
+//     // Still respond with 200 OK to stop PalmPay retries
+//     return res.status(HttpStatus.OK).json({ message: 'Error handled gracefully' });
+//   }
+// }
+
+
+@Post('webhook')
+  @HttpCode(HttpStatus.OK)
+  async handleWebhook(
+    @Body() payload: any,
+    @Headers('x-signature') signature: string,
+  ) {
+    // Optional: You can verify signature if PalmPay provides that
+    const isValid = await this.palmPayService.verifyWebhookSignature(payload, signature);
+    if (!isValid) {
+      console.log('Invalid webhook signature.');
+      return { status: 'ignored' };
+    }
+
+    console.log('Received PalmPay webhook:', payload);
+
+    if (payload.status === 'SUCCESS' && payload.orderNo) {
+      await this.palmPayService.handleSuccessfulPayment(payload);
+    }
+
+    return { status: 'received' };
   }
-}
-
-  /**
-   * (Optional) Verifies a payment request with PalmPay
-   */
-  // @Post('verify_payment')
-  // @ApiOperation({ summary: 'Verify payment' })
-  // @ApiBody({
-  //   description: 'Order details for verifying a payment',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       order_id: { type: 'string', description: 'The ID of the order to verify' },
-  //       orderNo: { type: 'string', description: 'The order number from PalmPay' },
-  //     },
-  //     required: ['order_id', 'orderNo'],
-  //   },
-  // })
-  // async verifyPayment(@Body() body: { order_id: string; orderNo: string }) {
-  //   return await this.palmPayService.verify_payment(body.order_id, body.orderNo);
-  // }
 }

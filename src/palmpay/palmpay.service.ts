@@ -97,7 +97,7 @@ export class PalmpayService {
         customerEmail: user.email,
         description: 'Order payment',
         // merchantId: this.merchant_id,
-        notifyUrl: 'https://stonepays-api-vvad.onrender.com/palmpay/notify',
+        notifyUrl: 'https://stonepays-api-v2hq.onrender.com/palmpay/webhook',
         nonceStr,
         orderId: order._id,
         requestTime,
@@ -203,47 +203,81 @@ async handle_webhook_notification(payload: any): Promise<void> {
   // Step 2: Continue with business logic after successful verification
 }
 
-  async handle_webhook(payload: Record<string, any>): Promise<any> {
-    const signature = payload.sign;
-    if (!signature) {
-      throw new BadRequestException('Missing signature');
-    }
+  // async handle_webhook(payload: Record<string, any>): Promise<any> {
+  //   const signature = payload.sign;
+  //   if (!signature) {
+  //     throw new BadRequestException('Missing signature');
+  //   }
   
-    // Step 1: Sort and concatenate parameters
-    const sortedData = Object.keys(payload)
-      .sort()
-      .filter(key => key !== 'sign' && typeof payload[key] !== 'undefined')
-      .map(key => `${key}=${payload[key]}`)
-      .join('&');
+  //   // Step 1: Sort and concatenate parameters
+  //   const sortedData = Object.keys(payload)
+  //     .sort()
+  //     .filter(key => key !== 'sign' && typeof payload[key] !== 'undefined')
+  //     .map(key => `${key}=${payload[key]}`)
+  //     .join('&');
   
-    // Step 2: Format the public key
-    const pemPublicKey = this.formatKey(this.public_key);
+  //   // Step 2: Format the public key
+  //   const pemPublicKey = this.formatKey(this.public_key);
   
-    // Step 3: Verify Signature using jsrsasign
-    const sig = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-    sig.init(pemPublicKey);
-    sig.updateString(sortedData);
-    const isValid = sig.verify(jsrsasign.b64tohex(signature));
+  //   // Step 3: Verify Signature using jsrsasign
+  //   const sig = new jsrsasign.KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+  //   sig.init(pemPublicKey);
+  //   sig.updateString(sortedData);
+  //   const isValid = sig.verify(jsrsasign.b64tohex(signature));
   
-    if (!isValid) {
-      throw new BadRequestException('Invalid signature');
-    }
+  //   if (!isValid) {
+  //     throw new BadRequestException('Invalid signature');
+  //   }
   
-    // Step 4: Find the order
-    const order = await this.order_model.findOne({ reference: payload.outTradeNo });
-    if (!order) {
-      throw new BadRequestException('Order not found');
-    }
+  //   // Step 4: Find the order
+  //   const order = await this.order_model.findOne({ reference: payload.outTradeNo });
+  //   if (!order) {
+  //     throw new BadRequestException('Order not found');
+  //   }
   
-    // Step 5: Update the order if success
-    if (payload.status === 'SUCCESS') {
-      order.payment_status = 'paid';
-      order.transaction_reference = payload.tradeNo;
-      await order.save();
-    }
+  //   // Step 5: Update the order if success
+  //   if (payload.status === 'SUCCESS') {
+  //     order.payment_status = 'paid';
+  //     order.transaction_reference = payload.tradeNo;
+  //     await order.save();
+  //   }
   
-    return { message: 'Webhook processed successfully' };
+  //   return { message: 'Webhook processed successfully' };
+  // }
+
+
+  verifyWebhookSignature(payload: any, signature: string): boolean {
+  // Example logic — adjust according to PalmPay's docs
+  const sorted = sortParams(payload);
+  const publicKey = formatKey(this.public_key);
+
+  const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+  sig.init(publicKey);
+  sig.updateString(sorted);
+
+  return sig.verify(b64utohex(signature));
+}
+
+
+async handleSuccessfulPayment(data: any) {
+  const order = await this.order_model.findOne({ orderNo: data.orderNo });
+
+  if (!order) {
+    console.warn(`Order not found: ${data.orderNo}`);
+    return;
   }
+
+  if (order.order_status === 'paid') {
+    return;
+  }
+
+  order.order_status = 'paid';
+  order.transaction_reference = data.referenceNo || data.tradeNo;
+  await order.save();
+
+}
+
+
   
 
   private formatKey(key: string): string {
